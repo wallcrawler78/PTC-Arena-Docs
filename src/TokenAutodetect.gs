@@ -11,9 +11,39 @@
 function autodetectTokenOpportunities(categoryGuid) {
   try {
     // Get category fields
-    var fields = getCategoryFields(categoryGuid);
+    var fieldsData = getCategoryFields(categoryGuid);
 
-    if (!fields || fields.length === 0) {
+    if (!fieldsData) {
+      return {
+        success: false,
+        error: 'No fields found for this category'
+      };
+    }
+
+    // Combine standard and custom fields into a single array and normalize structure
+    var standardFields = (fieldsData.standardFields || []).map(function(field) {
+      return {
+        displayName: field.displayName || field.name,
+        apiName: field.name,
+        fieldType: 'SINGLELINE',
+        attributeGuid: null,
+        type: 'standard'
+      };
+    });
+
+    var customFields = (fieldsData.customFields || []).map(function(field) {
+      return {
+        displayName: field.displayName || field.name,
+        apiName: field.name,
+        fieldType: field.fieldType || 'SINGLELINE',
+        attributeGuid: field.guid,
+        type: 'custom'
+      };
+    });
+
+    var fields = standardFields.concat(customFields);
+
+    if (fields.length === 0) {
       return {
         success: false,
         error: 'No fields found for this category'
