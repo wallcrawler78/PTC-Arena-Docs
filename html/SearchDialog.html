@@ -64,7 +64,9 @@
     .result-item {
       padding: 15px;
       border-bottom: 1px solid #eee;
-      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       transition: background-color 0.2s;
     }
 
@@ -75,6 +77,37 @@
     .result-item.selected {
       background-color: #e3f2fd;
       border-left: 4px solid #1976D2;
+    }
+
+    .result-content {
+      flex: 1;
+      cursor: pointer;
+    }
+
+    .result-actions {
+      display: flex;
+      gap: 8px;
+      margin-left: 15px;
+    }
+
+    .preview-btn {
+      background-color: transparent;
+      color: #1976D2;
+      border: 1px solid #1976D2;
+      padding: 8px 12px;
+      font-size: 20px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .preview-btn:hover {
+      background-color: #1976D2;
+      color: white;
     }
 
     .result-number {
@@ -141,6 +174,130 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+
+    /* Preview Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      animation: fadeIn 0.2s;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .modal-content {
+      background-color: white;
+      margin: 5% auto;
+      padding: 0;
+      border-radius: 8px;
+      width: 80%;
+      max-width: 600px;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      animation: slideDown 0.3s;
+    }
+
+    @keyframes slideDown {
+      from {
+        transform: translateY(-50px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .modal-header {
+      padding: 20px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      color: #1976D2;
+    }
+
+    .close {
+      color: #aaa;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+      width: 30px;
+      height: 30px;
+      line-height: 30px;
+    }
+
+    .close:hover {
+      color: #000;
+    }
+
+    .modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .preview-item {
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .preview-item:last-child {
+      border-bottom: none;
+    }
+
+    .preview-label {
+      font-weight: 600;
+      color: #1976D2;
+      margin-bottom: 5px;
+      font-size: 13px;
+    }
+
+    .preview-token {
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      color: #666;
+      margin-bottom: 8px;
+    }
+
+    .preview-value {
+      background-color: #f5f5f5;
+      padding: 10px;
+      border-radius: 4px;
+      color: #333;
+      font-size: 14px;
+      word-wrap: break-word;
+    }
+
+    .preview-value.empty {
+      color: #999;
+      font-style: italic;
+    }
+
+    .no-tokens-warning {
+      background-color: #fff3cd;
+      padding: 15px;
+      border-radius: 4px;
+      color: #856404;
+      border-left: 4px solid #ffc107;
+    }
   </style>
 </head>
 <body>
@@ -165,6 +322,22 @@
   <div class="button-group">
     <button class="cancel-btn" onclick="google.script.host.close()">Cancel</button>
     <button id="populateBtn" onclick="populate()" disabled>Populate Document</button>
+  </div>
+
+  <!-- Preview Modal -->
+  <div id="previewModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Token Preview</h3>
+        <button class="close" onclick="closePreview()">&times;</button>
+      </div>
+      <div class="modal-body" id="previewBody">
+        <div class="loading">
+          <div class="spinner"></div>
+          <p>Loading preview...</p>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -214,7 +387,11 @@
     function createResultItem(item) {
       var div = document.createElement('div');
       div.className = 'result-item';
-      div.onclick = function() { selectItem(item, div); };
+
+      // Content area (clickable to select)
+      var content = document.createElement('div');
+      content.className = 'result-content';
+      content.onclick = function() { selectItem(item, div); };
 
       var number = document.createElement('div');
       number.className = 'result-number';
@@ -232,10 +409,28 @@
       meta.className = 'result-meta';
       meta.textContent = 'Category: ' + (item.categoryName || 'Unknown') + ' | Rev: ' + (item.revisionNumber || item.RevisionNumber || '-');
 
-      div.appendChild(number);
-      div.appendChild(name);
-      div.appendChild(description);
-      div.appendChild(meta);
+      content.appendChild(number);
+      content.appendChild(name);
+      content.appendChild(description);
+      content.appendChild(meta);
+
+      // Actions area (preview button)
+      var actions = document.createElement('div');
+      actions.className = 'result-actions';
+
+      var previewBtn = document.createElement('button');
+      previewBtn.className = 'preview-btn';
+      previewBtn.innerHTML = '👁️';
+      previewBtn.title = 'Preview token values';
+      previewBtn.onclick = function(e) {
+        e.stopPropagation();
+        showPreview(item);
+      };
+
+      actions.appendChild(previewBtn);
+
+      div.appendChild(content);
+      div.appendChild(actions);
 
       return div;
     }
@@ -251,6 +446,96 @@
       element.classList.add('selected');
       selectedItem = item;
       document.getElementById('populateBtn').disabled = false;
+    }
+
+    function showPreview(item) {
+      var modal = document.getElementById('previewModal');
+      var previewBody = document.getElementById('previewBody');
+
+      modal.style.display = 'block';
+      previewBody.innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading preview...</p></div>';
+
+      var itemGuid = item.guid || item.Guid;
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          displayPreview(result, item);
+        })
+        .withFailureHandler(function(error) {
+          previewBody.innerHTML = '<div class="no-tokens-warning">Error loading preview: ' + error.message + '</div>';
+        })
+        .getPopulationPreview(itemGuid);
+    }
+
+    function displayPreview(result, item) {
+      var previewBody = document.getElementById('previewBody');
+      previewBody.innerHTML = '';
+
+      if (!result.success) {
+        previewBody.innerHTML = '<div class="no-tokens-warning">Error: ' + (result.error || 'Failed to load preview') + '</div>';
+        return;
+      }
+
+      // Item header
+      var itemInfo = document.createElement('div');
+      itemInfo.style.marginBottom = '20px';
+      itemInfo.style.padding = '15px';
+      itemInfo.style.backgroundColor = '#e3f2fd';
+      itemInfo.style.borderRadius = '4px';
+      itemInfo.innerHTML =
+        '<strong style="color: #1976D2;">Item: ' + result.itemNumber + '</strong><br>' +
+        '<div style="color: #333; margin-top: 5px;">' + result.itemName + '</div>';
+      previewBody.appendChild(itemInfo);
+
+      if (result.preview.length === 0) {
+        previewBody.innerHTML += '<div class="no-tokens-warning">' +
+          '<strong>No token mappings found</strong><br>' +
+          'Create token mappings using <strong>Arena PLM > Insert Tokens > Select Category</strong> first.' +
+          '</div>';
+        return;
+      }
+
+      // Token previews
+      result.preview.forEach(function(tokenPreview) {
+        var previewItem = document.createElement('div');
+        previewItem.className = 'preview-item';
+
+        var label = document.createElement('div');
+        label.className = 'preview-label';
+        label.textContent = tokenPreview.fieldName;
+
+        var token = document.createElement('div');
+        token.className = 'preview-token';
+        token.textContent = tokenPreview.token;
+
+        var value = document.createElement('div');
+        value.className = 'preview-value';
+
+        if (tokenPreview.value && tokenPreview.value.trim() !== '') {
+          value.textContent = tokenPreview.value;
+        } else {
+          value.textContent = '(empty)';
+          value.classList.add('empty');
+        }
+
+        previewItem.appendChild(label);
+        previewItem.appendChild(token);
+        previewItem.appendChild(value);
+
+        previewBody.appendChild(previewItem);
+      });
+    }
+
+    function closePreview() {
+      document.getElementById('previewModal').style.display = 'none';
+    }
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+      var modal = document.getElementById('previewModal');
+      if (event.target === modal) {
+        closePreview();
+      }
     }
 
     function populate() {
@@ -285,12 +570,6 @@
     function onError(error) {
       document.getElementById('loading').style.display = 'none';
       alert('Error: ' + error.message);
-    }
-
-    // Helper function for server side
-    function searchArenaItems(keyword) {
-      var client = createArenaClient();
-      return client.searchItems(keyword);
     }
   </script>
 </body>
