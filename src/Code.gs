@@ -389,6 +389,60 @@ function loginUser(email, password, workspaceId) {
 }
 
 /**
+ * Gets saved login credentials (email and workspace ID only, not password)
+ * @return {Object} Saved credentials or null
+ */
+function getSavedLoginCredentials() {
+  try {
+    var userProps = PropertiesService.getUserProperties();
+    var email = userProps.getProperty('arena_saved_email');
+    var workspaceId = userProps.getProperty('arena_saved_workspace_id');
+
+    if (email) {
+      return {
+        email: email,
+        workspaceId: workspaceId || ''
+      };
+    }
+
+    return null;
+  } catch (error) {
+    Logger.log('Error getting saved credentials: ' + error.message);
+    return null;
+  }
+}
+
+/**
+ * Saves login credentials (email and workspace ID only, never password)
+ * @param {string} email - User email
+ * @param {string} workspaceId - Workspace ID
+ */
+function saveLoginCredentials(email, workspaceId) {
+  try {
+    var userProps = PropertiesService.getUserProperties();
+    userProps.setProperty('arena_saved_email', email);
+    userProps.setProperty('arena_saved_workspace_id', workspaceId);
+    Logger.log('Login credentials saved (email and workspace ID only)');
+  } catch (error) {
+    Logger.log('Error saving credentials: ' + error.message);
+  }
+}
+
+/**
+ * Clears saved login credentials
+ */
+function clearSavedLoginCredentials() {
+  try {
+    var userProps = PropertiesService.getUserProperties();
+    userProps.deleteProperty('arena_saved_email');
+    userProps.deleteProperty('arena_saved_workspace_id');
+    Logger.log('Saved login credentials cleared');
+  } catch (error) {
+    Logger.log('Error clearing credentials: ' + error.message);
+  }
+}
+
+/**
  * Searches Arena items by keyword
  * @param {string} keyword - Search keyword
  * @return {Array} Array of matching items

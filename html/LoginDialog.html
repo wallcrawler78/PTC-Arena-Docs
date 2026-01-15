@@ -149,6 +149,13 @@
         <input type="text" id="workspaceId" name="workspaceId" required placeholder="12345">
       </div>
 
+      <div class="form-group">
+        <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">
+          <input type="checkbox" id="rememberMe" style="width: auto; margin-right: 8px;">
+          Remember email and workspace ID
+        </label>
+      </div>
+
       <div class="loading" id="loading">
         <div class="spinner"></div>
         <p>Logging in...</p>
@@ -162,12 +169,31 @@
   </div>
 
   <script>
+    // Load saved credentials on page load
+    window.addEventListener('load', function() {
+      google.script.run
+        .withSuccessHandler(function(savedCreds) {
+          if (savedCreds && savedCreds.email) {
+            document.getElementById('email').value = savedCreds.email;
+            document.getElementById('workspaceId').value = savedCreds.workspaceId || '';
+            document.getElementById('rememberMe').checked = true;
+            // Focus password field since other fields are filled
+            document.getElementById('password').focus();
+          }
+        })
+        .withFailureHandler(function(error) {
+          console.log('Could not load saved credentials: ' + error.message);
+        })
+        .getSavedLoginCredentials();
+    });
+
     document.getElementById('loginForm').addEventListener('submit', function(e) {
       e.preventDefault();
 
       var email = document.getElementById('email').value.trim();
       var password = document.getElementById('password').value;
       var workspaceId = document.getElementById('workspaceId').value.trim();
+      var rememberMe = document.getElementById('rememberMe').checked;
 
       // Validate inputs
       if (!email || !password || !workspaceId) {
@@ -181,16 +207,25 @@
 
       // Call server-side login function
       google.script.run
-        .withSuccessHandler(onLoginSuccess)
+        .withSuccessHandler(function(result) {
+          onLoginSuccess(result, email, workspaceId, rememberMe);
+        })
         .withFailureHandler(onLoginFailure)
         .loginUser(email, password, workspaceId);
     });
 
-    function onLoginSuccess(result) {
+    function onLoginSuccess(result, email, workspaceId, rememberMe) {
       document.getElementById('loading').style.display = 'none';
       document.getElementById('loginBtn').disabled = false;
 
       if (result.success) {
+        // Save or clear credentials based on checkbox
+        if (rememberMe) {
+          google.script.run.saveLoginCredentials(email, workspaceId);
+        } else {
+          google.script.run.clearSavedLoginCredentials();
+        }
+
         showMessage('Login successful! Closing...', 'success');
 
         // Close dialog after short delay

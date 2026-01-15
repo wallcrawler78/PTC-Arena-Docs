@@ -422,12 +422,18 @@
       Select an Arena category and the fields you want to include as tokens in your document.
     </div>
 
+    <label for="categorySearch">Search Categories:</label>
+    <input type="text" id="categorySearch" placeholder="Type to filter categories..." style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 100%; box-sizing: border-box; margin-bottom: 10px;">
+
     <label for="categorySelect">Arena Category</label>
     <select id="categorySelect" onchange="loadFields()">
       <option value="">Loading categories...</option>
     </select>
 
     <div id="fieldsSection" style="display: none;">
+      <label for="fieldSearch">Search Fields:</label>
+      <input type="text" id="fieldSearch" placeholder="Type to filter fields..." style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 100%; box-sizing: border-box; margin-bottom: 10px;">
+
       <label>
         Select Fields to Include
         <span style="float: right; font-weight: normal;">
@@ -591,14 +597,12 @@
       google.script.run
         .withSuccessHandler(function(categories) {
           allCategories = categories;
-          var select = document.getElementById('categorySelect');
-          select.innerHTML = '<option value="">Select a category...</option>';
+          renderCategoriesInWizard(categories);
 
-          categories.forEach(function(cat) {
-            var option = document.createElement('option');
-            option.value = cat.guid;
-            option.textContent = cat.name;
-            select.appendChild(option);
+          // Setup category search filter
+          var searchInput = document.getElementById('categorySearch');
+          searchInput.addEventListener('input', function() {
+            filterCategoriesInWizard(this.value);
           });
         })
         .withFailureHandler(function(error) {
@@ -615,6 +619,43 @@
           }
         })
         .getArenaCategories();
+    }
+
+    function renderCategoriesInWizard(categories) {
+      var select = document.getElementById('categorySelect');
+      select.innerHTML = '<option value="">Select a category...</option>';
+
+      // Limit initial display to 100 items for performance
+      var displayLimit = Math.min(categories.length, 100);
+
+      for (var i = 0; i < displayLimit; i++) {
+        var cat = categories[i];
+        var option = document.createElement('option');
+        option.value = cat.guid;
+        option.textContent = cat.name;
+        select.appendChild(option);
+      }
+
+      if (categories.length > displayLimit) {
+        var option = document.createElement('option');
+        option.disabled = true;
+        option.textContent = '--- Showing ' + displayLimit + ' of ' + categories.length + ' (use search to filter) ---';
+        select.appendChild(option);
+      }
+    }
+
+    function filterCategoriesInWizard(searchTerm) {
+      if (!searchTerm || searchTerm.trim() === '') {
+        renderCategoriesInWizard(allCategories);
+        return;
+      }
+
+      searchTerm = searchTerm.toLowerCase();
+      var filtered = allCategories.filter(function(cat) {
+        return cat.name.toLowerCase().indexOf(searchTerm) !== -1;
+      });
+
+      renderCategoriesInWizard(filtered);
     }
 
     function loadFields() {
@@ -668,6 +709,13 @@
           allFields = combinedFields;
           renderFieldCheckboxes(combinedFields);
           document.getElementById('fieldsSection').style.display = 'block';
+
+          // Setup field search filter
+          var fieldSearchInput = document.getElementById('fieldSearch');
+          fieldSearchInput.value = ''; // Clear previous search
+          fieldSearchInput.addEventListener('input', function() {
+            filterFields(this.value);
+          });
         })
         .withFailureHandler(function(error) {
           alert('Error loading fields: ' + error.message);
@@ -705,6 +753,21 @@
 
         grid.appendChild(container);
       });
+    }
+
+    function filterFields(searchTerm) {
+      if (!searchTerm || searchTerm.trim() === '') {
+        renderFieldCheckboxes(allFields);
+        return;
+      }
+
+      searchTerm = searchTerm.toLowerCase();
+      var filtered = allFields.filter(function(field) {
+        return field.displayName.toLowerCase().indexOf(searchTerm) !== -1 ||
+               (field.apiName && field.apiName.toLowerCase().indexOf(searchTerm) !== -1);
+      });
+
+      renderFieldCheckboxes(filtered);
     }
 
     function selectAllFields() {

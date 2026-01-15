@@ -287,8 +287,13 @@
     Select a category to scan your document for text that matches field names. The system will suggest where to insert tokens based on context and confidence.
   </div>
 
+  <div class="form-group">
+    <label for="categorySearch">Search Categories:</label>
+    <input type="text" id="categorySearch" placeholder="Type to filter categories..." style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 100%; box-sizing: border-box; margin-bottom: 10px;">
+  </div>
+
   <label for="categorySelect">Arena Category</label>
-  <select id="categorySelect">
+  <select id="categorySelect" size="1">
     <option value="">Loading categories...</option>
   </select>
 
@@ -343,16 +348,15 @@
       google.script.run
         .withSuccessHandler(function(categories) {
           allCategories = categories;
-          var select = document.getElementById('categorySelect');
-          select.innerHTML = '<option value="">Select a category...</option>';
+          renderCategories(categories);
 
-          categories.forEach(function(cat) {
-            var option = document.createElement('option');
-            option.value = cat.guid;
-            option.textContent = cat.name;
-            select.appendChild(option);
+          // Setup category search filter
+          var searchInput = document.getElementById('categorySearch');
+          searchInput.addEventListener('input', function() {
+            filterCategories(this.value);
           });
 
+          var select = document.getElementById('categorySelect');
           select.addEventListener('change', function() {
             document.getElementById('scanBtn').disabled = !this.value;
             document.getElementById('resultsSection').style.display = 'none';
@@ -372,6 +376,43 @@
           }
         })
         .getArenaCategories();
+    }
+
+    function renderCategories(categories) {
+      var select = document.getElementById('categorySelect');
+      select.innerHTML = '<option value="">Select a category...</option>';
+
+      // Limit initial display to 100 items for performance
+      var displayLimit = Math.min(categories.length, 100);
+
+      for (var i = 0; i < displayLimit; i++) {
+        var cat = categories[i];
+        var option = document.createElement('option');
+        option.value = cat.guid;
+        option.textContent = cat.name;
+        select.appendChild(option);
+      }
+
+      if (categories.length > displayLimit) {
+        var option = document.createElement('option');
+        option.disabled = true;
+        option.textContent = '--- Showing ' + displayLimit + ' of ' + categories.length + ' (use search to filter) ---';
+        select.appendChild(option);
+      }
+    }
+
+    function filterCategories(searchTerm) {
+      if (!searchTerm || searchTerm.trim() === '') {
+        renderCategories(allCategories);
+        return;
+      }
+
+      searchTerm = searchTerm.toLowerCase();
+      var filtered = allCategories.filter(function(cat) {
+        return cat.name.toLowerCase().indexOf(searchTerm) !== -1;
+      });
+
+      renderCategories(filtered);
     }
 
     function runAutodetect() {
