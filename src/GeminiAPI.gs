@@ -5,7 +5,7 @@
  */
 
 var GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
-var GEMINI_MODEL = 'gemini-1.5-flash'; // Fast and cost-effective (correct model name for v1beta)
+var GEMINI_MODEL = 'gemini-2.0-flash'; // Current stable model for v1beta API (2026)
 var CACHE_TTL_GEMINI = 0; // No caching for generated content
 
 /**
