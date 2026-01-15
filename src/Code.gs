@@ -71,6 +71,7 @@ function onOpen(e) {
   // Settings submenu
   var settingsMenu = ui.createMenu('Settings')
     .addItem('Manage Token Mappings', 'showTokenMappings')
+    .addItem('Configure Gemini API Key...', 'showGeminiApiKeyDialog')
     .addItem('Clear Cache', 'clearAllCaches')
     .addItem('About', 'showAboutDialog');
   menu.addSubMenu(settingsMenu);
@@ -424,4 +425,76 @@ function showAutodetectDialog() {
     .setTitle('Autodetect Field Tokens');
 
   DocumentApp.getUi().showModalDialog(html, 'Autodetect Field Tokens');
+}
+
+/**
+ * Shows the Gemini API Key configuration dialog
+ */
+function showGeminiApiKeyDialog() {
+  var html = HtmlService.createHtmlOutputFromFile('html/GeminiApiKeyDialog')
+    .setWidth(600)
+    .setHeight(550)
+    .setTitle('Configure Gemini API Key');
+
+  DocumentApp.getUi().showModalDialog(html, 'Configure Gemini API Key');
+}
+
+/**
+ * Checks if user has configured a Gemini API key
+ * @return {boolean} True if API key is configured
+ */
+function hasGeminiApiKey() {
+  var userProps = PropertiesService.getUserProperties();
+  var apiKey = userProps.getProperty('gemini_api_key');
+  return apiKey !== null && apiKey !== '';
+}
+
+/**
+ * Saves the Gemini API key
+ * @param {string} apiKey - The Gemini API key
+ * @return {Object} Result object
+ */
+function saveGeminiApiKey(apiKey) {
+  try {
+    if (!apiKey || apiKey.trim() === '') {
+      return {
+        success: false,
+        error: 'API key cannot be empty'
+      };
+    }
+
+    var userProps = PropertiesService.getUserProperties();
+    userProps.setProperty('gemini_api_key', apiKey.trim());
+
+    return {
+      success: true
+    };
+  } catch (error) {
+    Logger.log('Error saving Gemini API key: ' + error.message);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+/**
+ * Clears the Gemini API key
+ * @return {Object} Result object
+ */
+function clearGeminiApiKey() {
+  try {
+    var userProps = PropertiesService.getUserProperties();
+    userProps.deleteProperty('gemini_api_key');
+
+    return {
+      success: true
+    };
+  } catch (error) {
+    Logger.log('Error clearing Gemini API key: ' + error.message);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
 }

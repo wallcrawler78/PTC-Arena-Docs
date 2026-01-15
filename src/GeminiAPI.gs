@@ -14,16 +14,23 @@ var CACHE_TTL_GEMINI = 0; // No caching for generated content
 var GeminiAPIClient = (function() {
 
   function GeminiAPIClient() {
-    // Uses ScriptApp.getOAuthToken() for authentication
+    // Uses API key from UserProperties
   }
 
   /**
-   * Gets OAuth token for Gemini API access
+   * Gets API key for Gemini API access
    * @private
-   * @return {string} OAuth token
+   * @return {string} API key
    */
-  GeminiAPIClient.prototype._getOAuthToken = function() {
-    return ScriptApp.getOAuthToken();
+  GeminiAPIClient.prototype._getApiKey = function() {
+    var userProps = PropertiesService.getUserProperties();
+    var apiKey = userProps.getProperty('gemini_api_key');
+
+    if (!apiKey) {
+      throw new Error('Gemini API key not configured. Please set your API key in Arena PLM > Settings > Configure Gemini API Key');
+    }
+
+    return apiKey;
   };
 
   /**
@@ -34,13 +41,12 @@ var GeminiAPIClient = (function() {
    * @return {Object} Parsed JSON response
    */
   GeminiAPIClient.prototype._makeRequest = function(endpoint, payload) {
-    var url = GEMINI_BASE_URL + endpoint;
-    var token = this._getOAuthToken();
+    var apiKey = this._getApiKey();
+    var url = GEMINI_BASE_URL + endpoint + '?key=' + apiKey;
 
     var options = {
       method: 'POST',
       headers: {
-        'Authorization': 'Bearer ' + token,
         'Content-Type': 'application/json'
       },
       payload: JSON.stringify(payload),
@@ -55,8 +61,8 @@ var GeminiAPIClient = (function() {
         throw new Error('Gemini API rate limit exceeded. Please try again in a few moments.');
       }
 
-      if (responseCode === 403) {
-        throw new Error('Gemini API access denied. Please enable the Generative Language API in your Google Cloud Console.');
+      if (responseCode === 403 || responseCode === 400) {
+        throw new Error('Invalid Gemini API key. Please check your API key in Arena PLM > Settings > Configure Gemini API Key');
       }
 
       if (responseCode === 401) {

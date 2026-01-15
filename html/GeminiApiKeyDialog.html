@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body {
+      font-family: 'Google Sans', Arial, sans-serif;
+      padding: 20px;
+      margin: 0;
+    }
+
+    h2 {
+      color: #1976D2;
+      margin-top: 0;
+    }
+
+    .info-box {
+      background-color: #e3f2fd;
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: #1976d2;
+      border-left: 4px solid #1976D2;
+    }
+
+    .info-box a {
+      color: #1976D2;
+      font-weight: 600;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #333;
+      font-size: 14px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      font-family: 'Courier New', monospace;
+      box-sizing: border-box;
+      margin-bottom: 15px;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #1976D2;
+    }
+
+    button {
+      background-color: #1976D2;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      margin-right: 10px;
+    }
+
+    button:hover {
+      background-color: #1565C0;
+    }
+
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background-color: #fff;
+      color: #666;
+      border: 1px solid #ddd;
+    }
+
+    .btn-secondary:hover {
+      background-color: #f5f5f5;
+    }
+
+    .button-group {
+      text-align: right;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+    }
+
+    .status-message {
+      padding: 10px 15px;
+      border-radius: 4px;
+      margin-bottom: 15px;
+      display: none;
+    }
+
+    .status-message.success {
+      background-color: #c8e6c9;
+      color: #2e7d32;
+      border-left: 4px solid #4caf50;
+    }
+
+    .status-message.error {
+      background-color: #ffcdd2;
+      color: #c62828;
+      border-left: 4px solid #f44336;
+    }
+
+    .instructions {
+      background-color: #f5f5f5;
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-size: 13px;
+    }
+
+    .instructions ol {
+      margin: 10px 0;
+      padding-left: 20px;
+    }
+
+    .instructions li {
+      margin-bottom: 8px;
+    }
+
+    .current-status {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 15px;
+      padding: 10px;
+      background-color: #f5f5f5;
+      border-radius: 4px;
+    }
+
+    .current-status strong {
+      color: #333;
+    }
+
+    .key-configured {
+      color: #4caf50;
+      font-weight: 600;
+    }
+
+    .key-not-configured {
+      color: #f44336;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <h2>Configure Gemini API Key</h2>
+
+  <div class="info-box">
+    The AI Document Generation feature requires a Google Gemini API key.
+    Get your free API key at <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>.
+  </div>
+
+  <div class="current-status" id="currentStatus">
+    <strong>Status:</strong> <span id="statusText">Checking...</span>
+  </div>
+
+  <div class="instructions">
+    <strong>How to get your API key:</strong>
+    <ol>
+      <li>Visit <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a></li>
+      <li>Click "Create API Key" (or "Get API Key")</li>
+      <li>Select a Google Cloud project or create a new one</li>
+      <li>Copy the generated API key</li>
+      <li>Paste it below and click "Save"</li>
+    </ol>
+    <div style="margin-top: 10px; font-size: 12px; color: #666;">
+      <strong>Note:</strong> Your API key is stored securely in your Google account and is never shared.
+      The Gemini API has a generous free tier for personal use.
+    </div>
+  </div>
+
+  <div class="status-message" id="statusMessage"></div>
+
+  <label for="apiKeyInput">Gemini API Key</label>
+  <input type="text" id="apiKeyInput" placeholder="AIza..." maxlength="100">
+
+  <div class="button-group">
+    <button class="btn-secondary" onclick="clearApiKey()">Clear Key</button>
+    <button class="btn-secondary" onclick="google.script.host.close()">Cancel</button>
+    <button onclick="saveApiKey()" id="saveBtn">Save API Key</button>
+  </div>
+
+  <script>
+    window.addEventListener('load', function() {
+      checkCurrentKey();
+    });
+
+    function checkCurrentKey() {
+      google.script.run
+        .withSuccessHandler(function(hasKey) {
+          var statusText = document.getElementById('statusText');
+          if (hasKey) {
+            statusText.innerHTML = '<span class="key-configured">✓ API key is configured</span>';
+          } else {
+            statusText.innerHTML = '<span class="key-not-configured">✗ No API key configured</span>';
+          }
+        })
+        .withFailureHandler(function(error) {
+          document.getElementById('statusText').textContent = 'Error checking status';
+        })
+        .hasGeminiApiKey();
+    }
+
+    function saveApiKey() {
+      var apiKey = document.getElementById('apiKeyInput').value.trim();
+
+      if (!apiKey) {
+        showMessage('Please enter an API key', 'error');
+        return;
+      }
+
+      // Basic validation - Gemini API keys start with "AIza"
+      if (!apiKey.startsWith('AIza')) {
+        showMessage('Invalid API key format. Gemini API keys should start with "AIza"', 'error');
+        return;
+      }
+
+      document.getElementById('saveBtn').disabled = true;
+      document.getElementById('saveBtn').textContent = 'Saving...';
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          if (result.success) {
+            showMessage('API key saved successfully!', 'success');
+            document.getElementById('apiKeyInput').value = '';
+            checkCurrentKey();
+            setTimeout(function() {
+              google.script.host.close();
+            }, 1500);
+          } else {
+            showMessage('Error: ' + (result.error || 'Failed to save API key'), 'error');
+            document.getElementById('saveBtn').disabled = false;
+            document.getElementById('saveBtn').textContent = 'Save API Key';
+          }
+        })
+        .withFailureHandler(function(error) {
+          showMessage('Error: ' + error.message, 'error');
+          document.getElementById('saveBtn').disabled = false;
+          document.getElementById('saveBtn').textContent = 'Save API Key';
+        })
+        .saveGeminiApiKey(apiKey);
+    }
+
+    function clearApiKey() {
+      if (!confirm('Are you sure you want to clear your Gemini API key? You will need to re-enter it to use AI features.')) {
+        return;
+      }
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          if (result.success) {
+            showMessage('API key cleared', 'success');
+            checkCurrentKey();
+          } else {
+            showMessage('Error clearing API key', 'error');
+          }
+        })
+        .withFailureHandler(function(error) {
+          showMessage('Error: ' + error.message, 'error');
+        })
+        .clearGeminiApiKey();
+    }
+
+    function showMessage(message, type) {
+      var msgDiv = document.getElementById('statusMessage');
+      msgDiv.textContent = message;
+      msgDiv.className = 'status-message ' + type;
+      msgDiv.style.display = 'block';
+
+      if (type === 'success') {
+        setTimeout(function() {
+          msgDiv.style.display = 'none';
+        }, 3000);
+      }
+    }
+  </script>
+</body>
+</html>
