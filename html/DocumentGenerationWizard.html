@@ -434,6 +434,8 @@
       <label for="fieldSearch">Search Fields:</label>
       <input type="text" id="fieldSearch" placeholder="Type to filter fields..." style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 100%; box-sizing: border-box; margin-bottom: 10px;">
 
+      <div id="fieldLoadMessage" style="display: none; padding: 10px; border-radius: 4px; margin-bottom: 10px; font-size: 13px;"></div>
+
       <label>
         Select Fields to Include
         <span style="float: right; font-weight: normal;">
@@ -709,6 +711,24 @@
           allFields = combinedFields;
           renderFieldCheckboxes(combinedFields);
           document.getElementById('fieldsSection').style.display = 'block';
+
+          // Show warning or info message if present
+          var messageDiv = document.getElementById('fieldLoadMessage');
+          if (fieldsData.warning) {
+            messageDiv.innerHTML = '<strong>⚠️ Warning:</strong> ' + fieldsData.warning;
+            messageDiv.style.backgroundColor = '#fff3cd';
+            messageDiv.style.color = '#856404';
+            messageDiv.style.border = '1px solid #ffc107';
+            messageDiv.style.display = 'block';
+          } else if (fieldsData.info) {
+            messageDiv.innerHTML = '<strong>ℹ️ Info:</strong> ' + fieldsData.info;
+            messageDiv.style.backgroundColor = '#e3f2fd';
+            messageDiv.style.color = '#1976d2';
+            messageDiv.style.border = '1px solid #64b5f6';
+            messageDiv.style.display = 'block';
+          } else {
+            messageDiv.style.display = 'none';
+          }
 
           // Setup field search filter
           var fieldSearchInput = document.getElementById('fieldSearch');

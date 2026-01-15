@@ -216,9 +216,19 @@ var ArenaAPIClient = (function() {
    */
   ArenaAPIClient.prototype.getCategoryAttributes = function(categoryGuid) {
     var endpoint = '/settings/items/categories/' + categoryGuid + '/attributes';
+    Logger.log('Fetching category attributes from: ' + endpoint);
+
     var response = this._makeRequest(endpoint, { method: 'GET' });
 
-    return response.results || response.Results || [];
+    var results = response.results || response.Results || [];
+    Logger.log('Category attributes response - Count: ' + results.length);
+
+    if (results.length === 0) {
+      Logger.log('WARNING: No custom attributes found for category: ' + categoryGuid);
+      Logger.log('Full response: ' + JSON.stringify(response));
+    }
+
+    return results;
   };
 
   /**

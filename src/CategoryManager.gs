@@ -97,14 +97,24 @@ function getCategoryFields(categoryGuid) {
 
       // Get custom attributes for this category
       var customAttributes = [];
+      var attributeError = null;
+
       try {
+        Logger.log('Attempting to fetch custom attributes for category GUID: ' + guid);
         customAttributes = client.getCategoryAttributes(guid);
+
         if (!customAttributes) {
+          Logger.log('getCategoryAttributes returned null/undefined');
           customAttributes = [];
+        } else if (customAttributes.length === 0) {
+          Logger.log('Category has no custom attributes (empty array returned)');
+        } else {
+          Logger.log('Successfully fetched ' + customAttributes.length + ' custom attributes');
         }
       } catch (attrError) {
-        Logger.log('Error fetching custom attributes for category ' + guid + ': ' + attrError.message);
-        // Continue with empty custom attributes rather than failing completely
+        attributeError = attrError;
+        Logger.log('ERROR fetching custom attributes: ' + attrError.message);
+        Logger.log('Error stack: ' + attrError.stack);
         customAttributes = [];
       }
 
@@ -119,12 +129,21 @@ function getCategoryFields(categoryGuid) {
         };
       });
 
-      return {
+      var result = {
         categoryName: categoryName,
         categoryGuid: guid,
         standardFields: standardFields,
         customFields: customFields
       };
+
+      // Add warning if custom attributes failed to load or are empty
+      if (attributeError) {
+        result.warning = 'Failed to load custom attributes: ' + attributeError.message;
+      } else if (customFields.length === 0) {
+        result.info = 'This category has no custom attributes';
+      }
+
+      return result;
     });
   } catch (error) {
     Logger.log('Error getting category fields: ' + error.message);
