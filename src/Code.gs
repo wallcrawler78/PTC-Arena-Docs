@@ -51,6 +51,14 @@ function onOpen(e) {
 
   menu.addSeparator();
 
+  // Document Generation submenu (AI-powered)
+  var generationMenu = ui.createMenu('Document Generation')
+    .addItem('Generate with AI...', 'showDocumentGenerationWizard')
+    .addItem('Autodetect Field Tokens...', 'showAutodetectDialog');
+  menu.addSubMenu(generationMenu);
+
+  menu.addSeparator();
+
   // Revisions submenu
   var revisionsMenu = ui.createMenu('Revisions')
     .addItem('Update in Place', 'updateDocumentInPlace')
@@ -382,4 +390,38 @@ function searchArenaItems(keyword) {
  */
 function getCurrentDocumentName() {
   return DocumentApp.getActiveDocument().getName();
+}
+
+/**
+ * Shows the AI Document Generation Wizard
+ */
+function showDocumentGenerationWizard() {
+  if (!isUserLoggedIn()) {
+    DocumentApp.getUi().alert('Please login to Arena PLM first.');
+    return;
+  }
+
+  var html = HtmlService.createHtmlOutputFromFile('html/DocumentGenerationWizard')
+    .setWidth(800)
+    .setHeight(700)
+    .setTitle('AI Document Generation');
+
+  DocumentApp.getUi().showModalDialog(html, 'AI Document Generation');
+}
+
+/**
+ * Shows the Autodetect Token Dialog
+ */
+function showAutodetectDialog() {
+  if (!isUserLoggedIn()) {
+    DocumentApp.getUi().alert('Please login to Arena PLM first.');
+    return;
+  }
+
+  var html = HtmlService.createHtmlOutputFromFile('html/AutodetectDialog')
+    .setWidth(700)
+    .setHeight(600)
+    .setTitle('Autodetect Field Tokens');
+
+  DocumentApp.getUi().showModalDialog(html, 'Autodetect Field Tokens');
 }

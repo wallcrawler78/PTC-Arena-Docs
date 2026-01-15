@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body {
+      font-family: 'Google Sans', Arial, sans-serif;
+      padding: 20px;
+      margin: 0;
+      min-width: 600px;
+    }
+
+    h2 {
+      color: #1976D2;
+      margin-top: 0;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    /* Progress Indicator */
+    .progress-container {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 30px;
+      position: relative;
+    }
+
+    .progress-line {
+      position: absolute;
+      top: 15px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background-color: #ddd;
+      z-index: 0;
+    }
+
+    .progress-line-active {
+      position: absolute;
+      top: 15px;
+      left: 0;
+      height: 2px;
+      background-color: #1976D2;
+      z-index: 1;
+      transition: width 0.3s ease;
+    }
+
+    .progress-step {
+      flex: 1;
+      text-align: center;
+      position: relative;
+      z-index: 2;
+    }
+
+    .progress-circle {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background-color: #fff;
+      border: 2px solid #ddd;
+      margin: 0 auto 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: #999;
+      transition: all 0.3s ease;
+    }
+
+    .progress-step.active .progress-circle {
+      border-color: #1976D2;
+      background-color: #1976D2;
+      color: white;
+    }
+
+    .progress-step.completed .progress-circle {
+      border-color: #4CAF50;
+      background-color: #4CAF50;
+      color: white;
+    }
+
+    .progress-label {
+      font-size: 12px;
+      color: #999;
+    }
+
+    .progress-step.active .progress-label {
+      color: #1976D2;
+      font-weight: 600;
+    }
+
+    /* Step Container */
+    .step-container {
+      display: none;
+      animation: fadeIn 0.3s;
+    }
+
+    .step-container.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateX(20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* Form Elements */
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #333;
+      font-size: 14px;
+    }
+
+    select, input[type="text"], textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      font-family: inherit;
+      box-sizing: border-box;
+      margin-bottom: 15px;
+    }
+
+    select:focus, input:focus, textarea:focus {
+      outline: none;
+      border-color: #1976D2;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .field-grid {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 10px;
+      margin-bottom: 15px;
+    }
+
+    .field-checkbox {
+      display: block;
+      padding: 8px;
+      margin-bottom: 5px;
+      border-radius: 4px;
+      transition: background-color 0.2s;
+    }
+
+    .field-checkbox:hover {
+      background-color: #f5f5f5;
+    }
+
+    .field-checkbox input[type="checkbox"] {
+      margin-right: 8px;
+      width: auto;
+      margin-bottom: 0;
+    }
+
+    .field-checkbox label {
+      display: inline;
+      font-weight: normal;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .field-description {
+      font-size: 12px;
+      color: #666;
+      margin-left: 24px;
+      margin-top: 3px;
+    }
+
+    /* Buttons */
+    .button-group {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+    }
+
+    button {
+      background-color: #1976D2;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background-color 0.2s;
+    }
+
+    button:hover {
+      background-color: #1565C0;
+    }
+
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background-color: #fff;
+      color: #666;
+      border: 1px solid #ddd;
+    }
+
+    .btn-secondary:hover {
+      background-color: #f5f5f5;
+    }
+
+    .btn-success {
+      background-color: #4CAF50;
+    }
+
+    .btn-success:hover {
+      background-color: #45a049;
+    }
+
+    /* Info Box */
+    .info-box {
+      background-color: #e3f2fd;
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: #1976d2;
+      border-left: 4px solid #1976D2;
+    }
+
+    .warning-box {
+      background-color: #fff3cd;
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: #856404;
+      border-left: 4px solid #ffc107;
+    }
+
+    .error-box {
+      background-color: #ffebee;
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: #c62828;
+      border-left: 4px solid #f44336;
+    }
+
+    /* Loading Spinner */
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #1976D2;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 15px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Preview Styles */
+    .preview-container {
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 20px;
+      max-height: 400px;
+      overflow-y: auto;
+      background-color: #fafafa;
+      margin-bottom: 15px;
+      font-family: 'Times New Roman', serif;
+      line-height: 1.6;
+    }
+
+    .preview-content h1 {
+      font-size: 24px;
+      margin-top: 0;
+    }
+
+    .preview-content h2 {
+      font-size: 20px;
+      color: #333;
+    }
+
+    .preview-content h3 {
+      font-size: 16px;
+      color: #333;
+    }
+
+    .token-highlight {
+      background-color: #E8F4F8;
+      color: #1976D2;
+      font-weight: bold;
+      padding: 2px 4px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+    }
+
+    .stats-bar {
+      background-color: #f5f5f5;
+      padding: 12px 15px;
+      border-radius: 4px;
+      margin-bottom: 15px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+    }
+
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .stat-label {
+      color: #666;
+    }
+
+    .stat-value {
+      font-weight: bold;
+      color: #1976D2;
+    }
+
+    /* Example Prompts */
+    .example-prompts {
+      margin-top: 10px;
+    }
+
+    .example-prompt {
+      background-color: #f5f5f5;
+      padding: 8px 12px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background-color 0.2s;
+      border-left: 3px solid #1976D2;
+    }
+
+    .example-prompt:hover {
+      background-color: #e0e0e0;
+    }
+
+    /* Insert Mode Selection */
+    .insert-mode {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    .insert-mode label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: normal;
+      cursor: pointer;
+    }
+
+    .insert-mode input[type="radio"] {
+      margin: 0;
+      width: auto;
+    }
+  </style>
+</head>
+<body>
+  <h2>AI Document Generation</h2>
+  <p class="subtitle">Generate professional documents with Arena tokens using Gemini AI</p>
+
+  <!-- Progress Indicator -->
+  <div class="progress-container">
+    <div class="progress-line"></div>
+    <div class="progress-line-active" id="progressLineActive" style="width: 0%"></div>
+
+    <div class="progress-step active" data-step="1">
+      <div class="progress-circle">1</div>
+      <div class="progress-label">Category</div>
+    </div>
+    <div class="progress-step" data-step="2">
+      <div class="progress-circle">2</div>
+      <div class="progress-label">Document Type</div>
+    </div>
+    <div class="progress-step" data-step="3">
+      <div class="progress-circle">3</div>
+      <div class="progress-label">Parameters</div>
+    </div>
+    <div class="progress-step" data-step="4">
+      <div class="progress-circle">4</div>
+      <div class="progress-label">Description</div>
+    </div>
+    <div class="progress-step" data-step="5">
+      <div class="progress-circle">5</div>
+      <div class="progress-label">Preview</div>
+    </div>
+  </div>
+
+  <!-- Step 1: Category & Field Selection -->
+  <div class="step-container active" id="step1">
+    <div class="info-box">
+      Select an Arena category and the fields you want to include as tokens in your document.
+    </div>
+
+    <label for="categorySelect">Arena Category</label>
+    <select id="categorySelect" onchange="loadFields()">
+      <option value="">Loading categories...</option>
+    </select>
+
+    <div id="fieldsSection" style="display: none;">
+      <label>
+        Select Fields to Include
+        <span style="float: right; font-weight: normal;">
+          <a href="#" onclick="selectAllFields(); return false;" style="font-size: 12px;">Select All</a> |
+          <a href="#" onclick="selectNoneFields(); return false;" style="font-size: 12px;">Select None</a>
+        </span>
+      </label>
+      <div class="field-grid" id="fieldGrid">
+        <!-- Fields populated dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: Document Type -->
+  <div class="step-container" id="step2">
+    <div class="info-box">
+      Choose the type of document you want to generate. Each type has specific structure and formatting.
+    </div>
+
+    <label for="documentTypeSelect">Document Type</label>
+    <select id="documentTypeSelect" onchange="updateDocumentTypeInfo()">
+      <option value="">Select document type...</option>
+    </select>
+
+    <div id="documentTypeInfo" style="display: none; background-color: #f5f5f5; padding: 15px; border-radius: 4px; margin-top: 15px;">
+      <div id="documentTypeDescription" style="font-size: 14px; color: #333;"></div>
+    </div>
+  </div>
+
+  <!-- Step 3: Parameters -->
+  <div class="step-container" id="step3">
+    <div class="info-box">
+      Configure how the document should be generated.
+    </div>
+
+    <label for="toneSelect">Writing Tone</label>
+    <select id="toneSelect">
+      <option value="Professional">Professional</option>
+      <option value="Technical">Technical</option>
+      <option value="Formal">Formal</option>
+    </select>
+
+    <label for="lengthSelect">Document Length</label>
+    <select id="lengthSelect">
+      <option value="Short (1-2 pages)">Short (1-2 pages)</option>
+      <option value="Medium (3-5 pages)" selected>Medium (3-5 pages)</option>
+      <option value="Long (6+ pages)">Long (6+ pages)</option>
+    </select>
+
+    <label>
+      <input type="checkbox" id="includeTOC" checked style="width: auto; margin-right: 8px;">
+      Include Table of Contents
+    </label>
+
+    <label>
+      <input type="checkbox" id="includeRevisionTable" checked style="width: auto; margin-right: 8px;">
+      Include Revision History Table
+    </label>
+
+    <label>
+      <input type="checkbox" id="includeApprovalSection" checked style="width: auto; margin-right: 8px;">
+      Include Approval Section
+    </label>
+  </div>
+
+  <!-- Step 4: User Prompt -->
+  <div class="step-container" id="step4">
+    <div class="info-box">
+      Describe the document you want to generate. Be specific about content, requirements, and any special sections.
+    </div>
+
+    <label for="userPrompt">Document Description</label>
+    <textarea id="userPrompt" rows="6" placeholder="Example: Create a standard operating procedure for quality inspection of incoming electronic components. Include sections for visual inspection, electrical testing, and documentation requirements. Add quality checkpoints and acceptance criteria."></textarea>
+
+    <div class="example-prompts" id="examplePrompts">
+      <!-- Examples populated based on document type -->
+    </div>
+  </div>
+
+  <!-- Step 5: Preview & Insert -->
+  <div class="step-container" id="step5">
+    <div class="loading" id="generationLoading">
+      <div class="spinner"></div>
+      <p>Generating document with Gemini AI...</p>
+      <p style="font-size: 12px; color: #666;">This may take 10-30 seconds</p>
+    </div>
+
+    <div id="previewSection" style="display: none;">
+      <div class="stats-bar">
+        <div class="stat-item">
+          <span class="stat-label">Tokens Found:</span>
+          <span class="stat-value" id="tokenCount">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Document Length:</span>
+          <span class="stat-value" id="contentLength">0</span>
+        </div>
+        <div class="stat-item">
+          <button onclick="regenerate()" class="btn-secondary" style="padding: 6px 12px; font-size: 12px;">Regenerate</button>
+        </div>
+      </div>
+
+      <div id="warningsContainer"></div>
+
+      <label>Preview</label>
+      <div class="preview-container">
+        <div class="preview-content" id="previewContent">
+          <!-- Generated content displayed here -->
+        </div>
+      </div>
+
+      <label>Insert Mode</label>
+      <div class="insert-mode">
+        <label>
+          <input type="radio" name="insertMode" value="cursor" checked>
+          Insert at cursor position
+        </label>
+        <label>
+          <input type="radio" name="insertMode" value="replace">
+          Replace entire document
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Buttons -->
+  <div class="button-group">
+    <div>
+      <button id="prevBtn" onclick="previousStep()" class="btn-secondary" style="display: none;">Previous</button>
+    </div>
+    <div>
+      <button id="cancelBtn" onclick="google.script.host.close()" class="btn-secondary">Cancel</button>
+      <button id="nextBtn" onclick="nextStep()">Next</button>
+      <button id="insertBtn" onclick="insertDocument()" class="btn-success" style="display: none;">Insert Document</button>
+    </div>
+  </div>
+
+  <script>
+    var currentStep = 1;
+    var totalSteps = 5;
+    var wizardData = {
+      categoryName: null,
+      categoryGuid: null,
+      selectedFields: [],
+      documentType: null,
+      parameters: {},
+      userPrompt: null
+    };
+    var generatedContent = null;
+    var allCategories = [];
+    var allFields = [];
+    var documentTypes = [];
+
+    // Initialize wizard
+    window.addEventListener('load', function() {
+      loadCategories();
+      loadDocumentTypes();
+    });
+
+    function loadCategories() {
+      google.script.run
+        .withSuccessHandler(function(categories) {
+          allCategories = categories;
+          var select = document.getElementById('categorySelect');
+          select.innerHTML = '<option value="">Select a category...</option>';
+
+          categories.forEach(function(cat) {
+            var option = document.createElement('option');
+            option.value = cat.guid;
+            option.textContent = cat.name;
+            select.appendChild(option);
+          });
+        })
+        .withFailureHandler(function(error) {
+          alert('Error loading categories: ' + error.message);
+        })
+        .getCategories();
+    }
+
+    function loadFields() {
+      var select = document.getElementById('categorySelect');
+      var categoryGuid = select.value;
+
+      if (!categoryGuid) {
+        document.getElementById('fieldsSection').style.display = 'none';
+        return;
+      }
+
+      var selectedCategory = allCategories.find(function(cat) {
+        return cat.guid === categoryGuid;
+      });
+
+      wizardData.categoryName = selectedCategory.name;
+      wizardData.categoryGuid = categoryGuid;
+
+      google.script.run
+        .withSuccessHandler(function(fields) {
+          allFields = fields;
+          renderFieldCheckboxes(fields);
+          document.getElementById('fieldsSection').style.display = 'block';
+        })
+        .withFailureHandler(function(error) {
+          alert('Error loading fields: ' + error.message);
+        })
+        .getCategoryFields(categoryGuid);
+    }
+
+    function renderFieldCheckboxes(fields) {
+      var grid = document.getElementById('fieldGrid');
+      grid.innerHTML = '';
+
+      fields.forEach(function(field) {
+        var container = document.createElement('div');
+        container.className = 'field-checkbox';
+
+        var checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = 'field_' + field.apiName;
+        checkbox.value = field.apiName;
+        checkbox.checked = field.isStandard; // Auto-select standard fields
+
+        var label = document.createElement('label');
+        label.htmlFor = 'field_' + field.apiName;
+        label.textContent = field.displayName;
+
+        container.appendChild(checkbox);
+        container.appendChild(label);
+
+        if (field.description) {
+          var desc = document.createElement('div');
+          desc.className = 'field-description';
+          desc.textContent = field.description;
+          container.appendChild(desc);
+        }
+
+        grid.appendChild(container);
+      });
+    }
+
+    function selectAllFields() {
+      var checkboxes = document.querySelectorAll('#fieldGrid input[type="checkbox"]');
+      checkboxes.forEach(function(cb) { cb.checked = true; });
+    }
+
+    function selectNoneFields() {
+      var checkboxes = document.querySelectorAll('#fieldGrid input[type="checkbox"]');
+      checkboxes.forEach(function(cb) { cb.checked = false; });
+    }
+
+    function loadDocumentTypes() {
+      google.script.run
+        .withSuccessHandler(function(types) {
+          documentTypes = types;
+          var select = document.getElementById('documentTypeSelect');
+
+          types.forEach(function(type) {
+            var option = document.createElement('option');
+            option.value = type.key;
+            option.textContent = type.name;
+            select.appendChild(option);
+          });
+        })
+        .withFailureHandler(function(error) {
+          console.error('Error loading document types:', error);
+        })
+        .getDocumentTypes();
+    }
+
+    function updateDocumentTypeInfo() {
+      var select = document.getElementById('documentTypeSelect');
+      var selectedType = select.value;
+
+      if (!selectedType) {
+        document.getElementById('documentTypeInfo').style.display = 'none';
+        return;
+      }
+
+      var typeInfo = documentTypes.find(function(t) { return t.key === selectedType; });
+
+      if (typeInfo) {
+        document.getElementById('documentTypeDescription').textContent = typeInfo.description;
+        document.getElementById('documentTypeInfo').style.display = 'block';
+
+        // Load example prompts for this type
+        google.script.run
+          .withSuccessHandler(function(examples) {
+            renderExamplePrompts(examples);
+          })
+          .getExamplePrompts(selectedType);
+      }
+    }
+
+    function renderExamplePrompts(examples) {
+      var container = document.getElementById('examplePrompts');
+      container.innerHTML = '<div style="font-size: 13px; color: #666; margin-bottom: 8px;">Example prompts (click to use):</div>';
+
+      examples.forEach(function(example) {
+        var div = document.createElement('div');
+        div.className = 'example-prompt';
+        div.textContent = example;
+        div.onclick = function() {
+          document.getElementById('userPrompt').value = example;
+        };
+        container.appendChild(div);
+      });
+    }
+
+    function nextStep() {
+      if (!validateStep(currentStep)) {
+        return;
+      }
+
+      if (currentStep < totalSteps) {
+        // Save current step data
+        saveStepData(currentStep);
+
+        // Move to next step
+        currentStep++;
+        updateStepDisplay();
+
+        // Special handling for preview step
+        if (currentStep === 5) {
+          generateDocument();
+        }
+      }
+    }
+
+    function previousStep() {
+      if (currentStep > 1) {
+        currentStep--;
+        updateStepDisplay();
+      }
+    }
+
+    function updateStepDisplay() {
+      // Hide all steps
+      document.querySelectorAll('.step-container').forEach(function(step) {
+        step.classList.remove('active');
+      });
+
+      // Show current step
+      document.getElementById('step' + currentStep).classList.add('active');
+
+      // Update progress indicator
+      document.querySelectorAll('.progress-step').forEach(function(step) {
+        var stepNum = parseInt(step.dataset.step);
+        step.classList.remove('active', 'completed');
+
+        if (stepNum === currentStep) {
+          step.classList.add('active');
+        } else if (stepNum < currentStep) {
+          step.classList.add('completed');
+        }
+      });
+
+      // Update progress line
+      var progressPercent = ((currentStep - 1) / (totalSteps - 1)) * 100;
+      document.getElementById('progressLineActive').style.width = progressPercent + '%';
+
+      // Update button visibility
+      document.getElementById('prevBtn').style.display = currentStep > 1 ? 'inline-block' : 'none';
+      document.getElementById('nextBtn').style.display = currentStep < totalSteps ? 'inline-block' : 'none';
+      document.getElementById('insertBtn').style.display = currentStep === totalSteps ? 'inline-block' : 'none';
+    }
+
+    function validateStep(step) {
+      switch (step) {
+        case 1:
+          if (!wizardData.categoryGuid) {
+            alert('Please select a category');
+            return false;
+          }
+
+          var selectedFields = getSelectedFields();
+          if (selectedFields.length === 0) {
+            alert('Please select at least one field');
+            return false;
+          }
+
+          return true;
+
+        case 2:
+          if (!document.getElementById('documentTypeSelect').value) {
+            alert('Please select a document type');
+            return false;
+          }
+          return true;
+
+        case 3:
+          return true; // Parameters have defaults
+
+        case 4:
+          var prompt = document.getElementById('userPrompt').value.trim();
+          if (!prompt) {
+            alert('Please describe the document you want to generate');
+            return false;
+          }
+          return true;
+
+        default:
+          return true;
+      }
+    }
+
+    function saveStepData(step) {
+      switch (step) {
+        case 1:
+          wizardData.selectedFields = getSelectedFields();
+          break;
+
+        case 2:
+          wizardData.documentType = document.getElementById('documentTypeSelect').value;
+          break;
+
+        case 3:
+          wizardData.parameters = {
+            tone: document.getElementById('toneSelect').value,
+            length: document.getElementById('lengthSelect').value,
+            includeTOC: document.getElementById('includeTOC').checked,
+            includeRevisionTable: document.getElementById('includeRevisionTable').checked,
+            includeApprovalSection: document.getElementById('includeApprovalSection').checked
+          };
+          break;
+
+        case 4:
+          wizardData.userPrompt = document.getElementById('userPrompt').value.trim();
+          break;
+      }
+    }
+
+    function getSelectedFields() {
+      var selected = [];
+      var checkboxes = document.querySelectorAll('#fieldGrid input[type="checkbox"]:checked');
+
+      checkboxes.forEach(function(cb) {
+        var field = allFields.find(function(f) { return f.apiName === cb.value; });
+        if (field) {
+          selected.push(field);
+        }
+      });
+
+      return selected;
+    }
+
+    function generateDocument() {
+      document.getElementById('generationLoading').style.display = 'block';
+      document.getElementById('previewSection').style.display = 'none';
+
+      google.script.run
+        .withSuccessHandler(onGenerationComplete)
+        .withFailureHandler(onGenerationError)
+        .generateDocumentWithGemini(wizardData);
+    }
+
+    function onGenerationComplete(result) {
+      document.getElementById('generationLoading').style.display = 'none';
+
+      if (!result.success) {
+        var errorBox = document.createElement('div');
+        errorBox.className = 'error-box';
+        errorBox.innerHTML = '<strong>Generation Failed</strong><br>' + (result.error || 'Unknown error');
+        document.getElementById('previewSection').innerHTML = '';
+        document.getElementById('previewSection').appendChild(errorBox);
+        document.getElementById('previewSection').style.display = 'block';
+        return;
+      }
+
+      generatedContent = result;
+
+      // Update stats
+      document.getElementById('tokenCount').textContent = result.tokenCount;
+      document.getElementById('contentLength').textContent = result.content.length + ' characters';
+
+      // Show warnings if any
+      var warningsContainer = document.getElementById('warningsContainer');
+      warningsContainer.innerHTML = '';
+
+      if (result.warnings && result.warnings.length > 0) {
+        var warningBox = document.createElement('div');
+        warningBox.className = 'warning-box';
+        warningBox.innerHTML = '<strong>Warnings:</strong><ul>' +
+          result.warnings.map(function(w) { return '<li>' + w + '</li>'; }).join('') +
+          '</ul>';
+        warningsContainer.appendChild(warningBox);
+      }
+
+      // Render preview with token highlighting
+      renderPreview(result.content);
+
+      document.getElementById('previewSection').style.display = 'block';
+    }
+
+    function renderPreview(content) {
+      var preview = document.getElementById('previewContent');
+
+      // Highlight tokens
+      var highlighted = content.replace(
+        /\{\{ARENA:([^:]+):([^}]+)\}\}/g,
+        '<span class="token-highlight">{{ARENA:$1:$2}}</span>'
+      );
+
+      // Basic markdown conversion
+      highlighted = highlighted
+        .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+        .replace(/^## (.+)$/gm, '<h2>$2</h2>')
+        .replace(/^### (.+)$/gm, '<h3>$3</h3>')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\n\n/g, '</p><p>')
+        .replace(/\n/g, '<br>');
+
+      preview.innerHTML = '<p>' + highlighted + '</p>';
+    }
+
+    function onGenerationError(error) {
+      document.getElementById('generationLoading').style.display = 'none';
+      alert('Error generating document: ' + error.message);
+      currentStep = 4;
+      updateStepDisplay();
+    }
+
+    function regenerate() {
+      currentStep = 5;
+      generateDocument();
+    }
+
+    function insertDocument() {
+      if (!generatedContent) {
+        alert('No content to insert');
+        return;
+      }
+
+      var insertMode = document.querySelector('input[name="insertMode"]:checked').value;
+
+      document.getElementById('insertBtn').disabled = true;
+      document.getElementById('insertBtn').textContent = 'Inserting...';
+
+      google.script.run
+        .withSuccessHandler(onInsertComplete)
+        .withFailureHandler(onInsertError)
+        .insertGeneratedContent(generatedContent.content, insertMode, wizardData);
+    }
+
+    function onInsertComplete(result) {
+      if (result.success) {
+        alert('Document inserted successfully with ' + result.tokensCreated + ' tokens!');
+        google.script.host.close();
+      } else {
+        alert('Error inserting document: ' + (result.error || 'Unknown error'));
+        document.getElementById('insertBtn').disabled = false;
+        document.getElementById('insertBtn').textContent = 'Insert Document';
+      }
+    }
+
+    function onInsertError(error) {
+      alert('Error inserting document: ' + error.message);
+      document.getElementById('insertBtn').disabled = false;
+      document.getElementById('insertBtn').textContent = 'Insert Document';
+    }
+  </script>
+</body>
+</html>

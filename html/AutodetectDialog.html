@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body {
+      font-family: 'Google Sans', Arial, sans-serif;
+      padding: 20px;
+      margin: 0;
+    }
+
+    h2 {
+      color: #1976D2;
+      margin-top: 0;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    .info-box {
+      background-color: #e3f2fd;
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: #1976d2;
+      border-left: 4px solid #1976D2;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #333;
+      font-size: 14px;
+    }
+
+    select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      font-family: inherit;
+      margin-bottom: 20px;
+    }
+
+    select:focus {
+      outline: none;
+      border-color: #1976D2;
+    }
+
+    button {
+      background-color: #1976D2;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background-color 0.2s;
+    }
+
+    button:hover {
+      background-color: #1565C0;
+    }
+
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background-color: #fff;
+      color: #666;
+      border: 1px solid #ddd;
+    }
+
+    .btn-secondary:hover {
+      background-color: #f5f5f5;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #1976D2;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 15px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .stats-bar {
+      background-color: #f5f5f5;
+      padding: 12px 15px;
+      border-radius: 4px;
+      margin-bottom: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+    }
+
+    .stats-bar .left {
+      display: flex;
+      gap: 20px;
+    }
+
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .stat-label {
+      color: #666;
+    }
+
+    .stat-value {
+      font-weight: bold;
+      color: #1976D2;
+    }
+
+    .selection-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .selection-actions a {
+      font-size: 12px;
+      cursor: pointer;
+      color: #1976D2;
+      text-decoration: none;
+    }
+
+    .selection-actions a:hover {
+      text-decoration: underline;
+    }
+
+    .suggestions-container {
+      max-height: 400px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin-bottom: 20px;
+    }
+
+    .suggestion-item {
+      padding: 15px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      transition: background-color 0.2s;
+    }
+
+    .suggestion-item:hover {
+      background-color: #fafafa;
+    }
+
+    .suggestion-item:last-child {
+      border-bottom: none;
+    }
+
+    .suggestion-checkbox {
+      margin-top: 3px;
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    .suggestion-content {
+      flex: 1;
+    }
+
+    .suggestion-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .field-name {
+      font-weight: 600;
+      color: #333;
+      font-size: 15px;
+    }
+
+    .confidence-badge {
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .confidence-high {
+      background-color: #c8e6c9;
+      color: #2e7d32;
+    }
+
+    .confidence-medium {
+      background-color: #ffe0b2;
+      color: #e65100;
+    }
+
+    .confidence-low {
+      background-color: #ffcdd2;
+      color: #c62828;
+    }
+
+    .context-display {
+      background-color: #f5f5f5;
+      padding: 10px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      color: #333;
+      margin-bottom: 8px;
+      word-wrap: break-word;
+      line-height: 1.6;
+    }
+
+    .matched-text {
+      background-color: #fff59d;
+      padding: 2px 4px;
+      border-radius: 2px;
+      font-weight: bold;
+      color: #000;
+    }
+
+    .suggestion-meta {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .no-suggestions {
+      text-align: center;
+      padding: 60px 20px;
+      color: #666;
+    }
+
+    .no-suggestions-icon {
+      font-size: 48px;
+      margin-bottom: 15px;
+      color: #ccc;
+    }
+
+    .button-group {
+      display: flex;
+      justify-content: space-between;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+    }
+
+    .warning-box {
+      background-color: #fff3cd;
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: #856404;
+      border-left: 4px solid #ffc107;
+    }
+  </style>
+</head>
+<body>
+  <h2>Autodetect Field Tokens</h2>
+  <p class="subtitle">Automatically find and suggest where to place Arena field tokens</p>
+
+  <div class="info-box">
+    Select a category to scan your document for text that matches field names. The system will suggest where to insert tokens based on context and confidence.
+  </div>
+
+  <label for="categorySelect">Arena Category</label>
+  <select id="categorySelect">
+    <option value="">Loading categories...</option>
+  </select>
+
+  <div style="text-align: right; margin-bottom: 20px;">
+    <button onclick="runAutodetect()" id="scanBtn" disabled>Scan Document</button>
+  </div>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p>Scanning document for token opportunities...</p>
+  </div>
+
+  <div id="resultsSection" style="display: none;">
+    <div class="stats-bar">
+      <div class="left">
+        <div class="stat-item">
+          <span class="stat-label">Suggestions:</span>
+          <span class="stat-value" id="suggestionCount">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Selected:</span>
+          <span class="stat-value" id="selectedCount">0</span>
+        </div>
+      </div>
+      <div class="selection-actions">
+        <a href="#" onclick="selectAll(); return false;">Select All</a>
+        <span style="color: #ddd;">|</span>
+        <a href="#" onclick="selectNone(); return false;">Select None</a>
+      </div>
+    </div>
+
+    <div class="suggestions-container" id="suggestionsContainer">
+      <!-- Suggestions populated dynamically -->
+    </div>
+  </div>
+
+  <div class="button-group">
+    <button class="btn-secondary" onclick="google.script.host.close()">Cancel</button>
+    <button id="insertBtn" onclick="insertSelected()" disabled>Insert Selected Tokens</button>
+  </div>
+
+  <script>
+    var allCategories = [];
+    var allSuggestions = [];
+    var selectedCategory = null;
+
+    window.addEventListener('load', function() {
+      loadCategories();
+    });
+
+    function loadCategories() {
+      google.script.run
+        .withSuccessHandler(function(categories) {
+          allCategories = categories;
+          var select = document.getElementById('categorySelect');
+          select.innerHTML = '<option value="">Select a category...</option>';
+
+          categories.forEach(function(cat) {
+            var option = document.createElement('option');
+            option.value = cat.guid;
+            option.textContent = cat.name;
+            select.appendChild(option);
+          });
+
+          select.addEventListener('change', function() {
+            document.getElementById('scanBtn').disabled = !this.value;
+            document.getElementById('resultsSection').style.display = 'none';
+          });
+        })
+        .withFailureHandler(function(error) {
+          alert('Error loading categories: ' + error.message);
+        })
+        .getCategories();
+    }
+
+    function runAutodetect() {
+      var categoryGuid = document.getElementById('categorySelect').value;
+
+      if (!categoryGuid) {
+        alert('Please select a category');
+        return;
+      }
+
+      selectedCategory = allCategories.find(function(cat) {
+        return cat.guid === categoryGuid;
+      });
+
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('resultsSection').style.display = 'none';
+      document.getElementById('scanBtn').disabled = true;
+
+      google.script.run
+        .withSuccessHandler(onAutodetectComplete)
+        .withFailureHandler(onAutodetectError)
+        .autodetectTokenOpportunities(categoryGuid);
+    }
+
+    function onAutodetectComplete(result) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('scanBtn').disabled = false;
+
+      if (!result.success) {
+        alert('Error: ' + (result.error || 'Autodetect failed'));
+        return;
+      }
+
+      allSuggestions = result.suggestions;
+
+      if (allSuggestions.length === 0) {
+        showNoSuggestions();
+        return;
+      }
+
+      document.getElementById('suggestionCount').textContent = allSuggestions.length;
+      document.getElementById('selectedCount').textContent = '0';
+
+      renderSuggestions(allSuggestions);
+      document.getElementById('resultsSection').style.display = 'block';
+    }
+
+    function renderSuggestions(suggestions) {
+      var container = document.getElementById('suggestionsContainer');
+      container.innerHTML = '';
+
+      suggestions.forEach(function(suggestion, index) {
+        var item = createSuggestionItem(suggestion, index);
+        container.appendChild(item);
+      });
+
+      updateSelectedCount();
+    }
+
+    function createSuggestionItem(suggestion, index) {
+      var div = document.createElement('div');
+      div.className = 'suggestion-item';
+
+      // Checkbox
+      var checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.className = 'suggestion-checkbox';
+      checkbox.id = 'suggestion_' + index;
+      checkbox.checked = suggestion.confidence >= 0.9; // Auto-select high confidence
+      checkbox.onchange = updateSelectedCount;
+
+      // Content
+      var content = document.createElement('div');
+      content.className = 'suggestion-content';
+
+      // Header (field name + confidence)
+      var header = document.createElement('div');
+      header.className = 'suggestion-header';
+
+      var fieldName = document.createElement('div');
+      fieldName.className = 'field-name';
+      fieldName.textContent = suggestion.fieldName;
+
+      var confidence = document.createElement('span');
+      confidence.className = 'confidence-badge';
+      var confidencePercent = Math.round(suggestion.confidence * 100);
+      confidence.textContent = confidencePercent + '%';
+
+      if (suggestion.confidence >= 0.9) {
+        confidence.classList.add('confidence-high');
+      } else if (suggestion.confidence >= 0.75) {
+        confidence.classList.add('confidence-medium');
+      } else {
+        confidence.classList.add('confidence-low');
+      }
+
+      header.appendChild(fieldName);
+      header.appendChild(confidence);
+
+      // Context display
+      var contextDiv = document.createElement('div');
+      contextDiv.className = 'context-display';
+
+      // Highlight the matched text within the context
+      var highlightedContext = suggestion.context.replace(
+        new RegExp(escapeRegex(suggestion.matchedText), 'gi'),
+        '<span class="matched-text">' + suggestion.matchedText + '</span>'
+      );
+      contextDiv.innerHTML = '...' + highlightedContext + '...';
+
+      // Meta info
+      var meta = document.createElement('div');
+      meta.className = 'suggestion-meta';
+      meta.textContent = 'Pattern: ' + suggestion.patternType + ' | Match: "' + suggestion.matchedText + '"';
+
+      content.appendChild(header);
+      content.appendChild(contextDiv);
+      content.appendChild(meta);
+
+      div.appendChild(checkbox);
+      div.appendChild(content);
+
+      return div;
+    }
+
+    function showNoSuggestions() {
+      var container = document.getElementById('suggestionsContainer');
+      container.innerHTML = '' +
+        '<div class="no-suggestions">' +
+        '  <div class="no-suggestions-icon">🔍</div>' +
+        '  <p><strong>No token opportunities found</strong></p>' +
+        '  <p>Try a different category or manually insert tokens using the Token Palette.</p>' +
+        '</div>';
+
+      document.getElementById('resultsSection').style.display = 'block';
+    }
+
+    function selectAll() {
+      var checkboxes = document.querySelectorAll('.suggestion-checkbox');
+      checkboxes.forEach(function(cb) {
+        cb.checked = true;
+      });
+      updateSelectedCount();
+    }
+
+    function selectNone() {
+      var checkboxes = document.querySelectorAll('.suggestion-checkbox');
+      checkboxes.forEach(function(cb) {
+        cb.checked = false;
+      });
+      updateSelectedCount();
+    }
+
+    function updateSelectedCount() {
+      var checkboxes = document.querySelectorAll('.suggestion-checkbox:checked');
+      var count = checkboxes.length;
+
+      document.getElementById('selectedCount').textContent = count;
+      document.getElementById('insertBtn').disabled = count === 0;
+    }
+
+    function insertSelected() {
+      var selected = [];
+
+      allSuggestions.forEach(function(suggestion, index) {
+        var checkbox = document.getElementById('suggestion_' + index);
+        if (checkbox && checkbox.checked) {
+          selected.push(suggestion);
+        }
+      });
+
+      if (selected.length === 0) {
+        alert('Please select at least one suggestion');
+        return;
+      }
+
+      document.getElementById('insertBtn').disabled = true;
+      document.getElementById('insertBtn').textContent = 'Inserting...';
+
+      google.script.run
+        .withSuccessHandler(onInsertComplete)
+        .withFailureHandler(onInsertError)
+        .insertAutodetectedTokens(selected, selectedCategory.guid, selectedCategory.name);
+    }
+
+    function onInsertComplete(result) {
+      if (result.success) {
+        alert('Successfully inserted ' + result.tokensInserted + ' tokens!');
+        google.script.host.close();
+      } else {
+        alert('Error: ' + (result.error || 'Failed to insert tokens'));
+        document.getElementById('insertBtn').disabled = false;
+        document.getElementById('insertBtn').textContent = 'Insert Selected Tokens';
+      }
+    }
+
+    function onInsertError(error) {
+      alert('Error inserting tokens: ' + error.message);
+      document.getElementById('insertBtn').disabled = false;
+      document.getElementById('insertBtn').textContent = 'Insert Selected Tokens';
+    }
+
+    function onAutodetectError(error) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('scanBtn').disabled = false;
+      alert('Error: ' + error.message);
+    }
+
+    function escapeRegex(str) {
+      return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+  </script>
+</body>
+</html>
