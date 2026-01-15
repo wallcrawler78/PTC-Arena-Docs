@@ -602,7 +602,17 @@
           });
         })
         .withFailureHandler(function(error) {
-          alert('Error loading categories: ' + error.message);
+          var select = document.getElementById('categorySelect');
+          select.innerHTML = '<option value="">Error loading categories</option>';
+
+          var errorMsg = error.message || 'Unknown error';
+
+          // Check if it's a login issue
+          if (errorMsg.indexOf('session') !== -1 || errorMsg.indexOf('login') !== -1 || errorMsg.indexOf('401') !== -1) {
+            alert('Not logged into Arena PLM.\n\nPlease login first:\nArena PLM > Login');
+          } else {
+            alert('Error loading categories: ' + errorMsg + '\n\nPlease ensure you are logged into Arena PLM.');
+          }
         })
         .getCategories();
     }
