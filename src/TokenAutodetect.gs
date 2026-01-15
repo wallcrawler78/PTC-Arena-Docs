@@ -390,54 +390,61 @@ function escapeRegex(str) {
 function insertAutodetectedTokens(selectedSuggestions, categoryGuid, categoryName) {
   try {
     var doc = DocumentApp.getActiveDocument();
+    var body = doc.getBody();
     var tokensInserted = 0;
 
-    selectedSuggestions.forEach(function(suggestion) {
+    // Sort by position descending (insert from end first to avoid position shifts)
+    var sortedSuggestions = selectedSuggestions.slice().sort(function(a, b) {
+      return b.position - a.position;
+    });
+
+    sortedSuggestions.forEach(function(suggestion) {
       try {
-        // Find the position after the matched text
-        var element = suggestion.element;
-        var offset = suggestion.offset + suggestion.matchedText.length;
+        // Re-find the element at this position (element refs don't survive serialization)
+        var elementInfo = findElementAtPosition(body, suggestion.position + suggestion.matchedText.length);
+        var element = elementInfo.element;
+        var offset = elementInfo.offset;
+
+        if (!element || !element.asText) {
+          Logger.log('Could not find valid text element at position ' + suggestion.position);
+          return;
+        }
 
         // Insert token text
         var tokenText = '{{ARENA:' + categoryName + ':' + suggestion.fieldName + '}}';
 
-        var position = doc.newPosition(element, offset);
-        var range = doc.newRange().addElement(element, offset, offset).build();
-
         // Insert the token
-        if (element.asText) {
-          element.asText().insertText(offset, ' ' + tokenText);
+        element.asText().insertText(offset, ' ' + tokenText);
 
-          // Apply token styling
-          var startIdx = offset + 1; // +1 for space
-          element.asText().setBackgroundColor(startIdx, startIdx + tokenText.length - 1, '#E8F4F8');
-          element.asText().setForegroundColor(startIdx, startIdx + tokenText.length - 1, '#1976D2');
-          element.asText().setBold(startIdx, startIdx + tokenText.length - 1, true);
+        // Apply token styling
+        var startIdx = offset + 1; // +1 for space
+        element.asText().setBackgroundColor(startIdx, startIdx + tokenText.length - 1, '#E8F4F8');
+        element.asText().setForegroundColor(startIdx, startIdx + tokenText.length - 1, '#1976D2');
+        element.asText().setBold(startIdx, startIdx + tokenText.length - 1, true);
 
-          // Create bookmark
-          var bookmarkPos = doc.newPosition(element, startIdx);
-          var bookmark = doc.addBookmark(bookmarkPos);
+        // Create bookmark
+        var bookmarkPos = doc.newPosition(element, startIdx);
+        var bookmark = doc.addBookmark(bookmarkPos);
 
-          // Store metadata
-          var metadata = {
-            bookmarkId: bookmark.getId(),
-            tokenText: tokenText,
-            categoryName: categoryName,
-            categoryGuid: categoryGuid,
-            fieldName: suggestion.fieldName,
-            fieldType: suggestion.fieldType,
-            attributeGuid: suggestion.attributeGuid,
-            createdAt: new Date().toISOString(),
-            source: 'autodetect',
-            detectedFrom: suggestion.matchedText,
-            confidence: suggestion.confidence
-          };
+        // Store metadata
+        var metadata = {
+          bookmarkId: bookmark.getId(),
+          tokenText: tokenText,
+          categoryName: categoryName,
+          categoryGuid: categoryGuid,
+          fieldName: suggestion.fieldName,
+          fieldType: suggestion.fieldType,
+          attributeGuid: suggestion.attributeGuid,
+          createdAt: new Date().toISOString(),
+          source: 'autodetect',
+          detectedFrom: suggestion.matchedText,
+          confidence: suggestion.confidence
+        };
 
-          var docProps = PropertiesService.getDocumentProperties();
-          docProps.setProperty('token_' + bookmark.getId(), JSON.stringify(metadata));
+        var docProps = PropertiesService.getDocumentProperties();
+        docProps.setProperty('token_' + bookmark.getId(), JSON.stringify(metadata));
 
-          tokensInserted++;
-        }
+        tokensInserted++;
 
       } catch (error) {
         Logger.log('Error inserting token for ' + suggestion.fieldName + ': ' + error.message);
