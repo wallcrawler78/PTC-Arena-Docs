@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body {
+      font-family: 'Google Sans', Arial, sans-serif;
+      padding: 20px;
+      margin: 0;
+    }
+
+    h2 {
+      color: #1976D2;
+      margin-top: 0;
+    }
+
+    .info-box {
+      background-color: #fff3cd;
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: #856404;
+      border-left: 4px solid #ffc107;
+    }
+
+    .changes-container {
+      max-height: 350px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin-bottom: 20px;
+    }
+
+    .change-item {
+      padding: 15px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .change-item:last-child {
+      border-bottom: none;
+    }
+
+    .change-field {
+      font-weight: 600;
+      color: #1976D2;
+      margin-bottom: 8px;
+    }
+
+    .change-values {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-top: 8px;
+    }
+
+    .value-box {
+      padding: 10px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    .current-value {
+      background-color: #ffebee;
+      border: 1px solid #ef5350;
+    }
+
+    .new-value {
+      background-color: #e8f5e9;
+      border: 1px solid #66bb6a;
+    }
+
+    .value-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #666;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+    }
+
+    .value-content {
+      color: #333;
+      word-break: break-word;
+    }
+
+    .button-group {
+      text-align: right;
+    }
+
+    button {
+      background-color: #1976D2;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      margin-left: 10px;
+    }
+
+    button:hover {
+      background-color: #1565C0;
+    }
+
+    .close-btn {
+      background-color: #fff;
+      color: #666;
+      border: 1px solid #ddd;
+    }
+
+    .close-btn:hover {
+      background-color: #f5f5f5;
+    }
+
+    .stats {
+      background-color: #f5f5f5;
+      padding: 10px 15px;
+      border-radius: 4px;
+      margin-bottom: 15px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Change Preview</h2>
+
+  <div class="stats">
+    <strong><?= changes.length ?></strong> field(s) will be updated
+  </div>
+
+  <div class="info-box">
+    These changes will be applied if you update the document or create a revised copy.
+  </div>
+
+  <div class="changes-container">
+    <? for (var i = 0; i < changes.length; i++) { ?>
+      <div class="change-item">
+        <div class="change-field">
+          <?= changes[i].fieldName ?> (<?= changes[i].categoryName ?>)
+        </div>
+        <div class="change-values">
+          <div class="value-box current-value">
+            <div class="value-label">Current Value</div>
+            <div class="value-content"><?= changes[i].currentValue || '(empty)' ?></div>
+          </div>
+          <div class="value-box new-value">
+            <div class="value-label">New Value</div>
+            <div class="value-content"><?= changes[i].newValue || '(empty)' ?></div>
+          </div>
+        </div>
+      </div>
+    <? } ?>
+  </div>
+
+  <div class="button-group">
+    <button class="close-btn" onclick="google.script.host.close()">Close</button>
+  </div>
+</body>
+</html>

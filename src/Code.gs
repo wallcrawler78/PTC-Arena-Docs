@@ -375,3 +375,11 @@ function searchArenaItems(keyword) {
   var client = createArenaClient();
   return client.searchItems(keyword);
 }
+
+/**
+ * Gets the current document name
+ * @return {string} Document name
+ */
+function getCurrentDocumentName() {
+  return DocumentApp.getActiveDocument().getName();
+}
