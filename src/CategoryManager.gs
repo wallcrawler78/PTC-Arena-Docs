@@ -31,6 +31,12 @@ function getArenaCategories() {
  */
 function getCategoryFields(categoryGuid) {
   try {
+    Logger.log('getCategoryFields called with GUID: ' + categoryGuid);
+
+    if (!categoryGuid) {
+      throw new Error('Category GUID is required');
+    }
+
     var cacheManager = createCacheManager();
 
     // Try to get from cache first
@@ -38,10 +44,21 @@ function getCategoryFields(categoryGuid) {
       // Cache miss - fetch from API
       Logger.log('Fetching fields for category ' + guid + ' from Arena API...');
       var client = createArenaClient();
-      var category = client.getCategoryByGuid(guid);
 
-      if (!category) {
-        throw new Error('Category not found');
+      // Get category name from cached categories list (more efficient)
+      var categoryName = 'Unknown Category';
+      try {
+        var categories = cacheManager.get('arena_categories', 'user');
+        if (categories) {
+          for (var i = 0; i < categories.length; i++) {
+            if (categories[i].guid === guid) {
+              categoryName = categories[i].name;
+              break;
+            }
+          }
+        }
+      } catch (e) {
+        Logger.log('Could not get category name from cache, using fallback: ' + e.message);
       }
 
       // Standard fields available for all categories
@@ -79,7 +96,17 @@ function getCategoryFields(categoryGuid) {
       ];
 
       // Get custom attributes for this category
-      var customAttributes = client.getCategoryAttributes(guid);
+      var customAttributes = [];
+      try {
+        customAttributes = client.getCategoryAttributes(guid);
+        if (!customAttributes) {
+          customAttributes = [];
+        }
+      } catch (attrError) {
+        Logger.log('Error fetching custom attributes for category ' + guid + ': ' + attrError.message);
+        // Continue with empty custom attributes rather than failing completely
+        customAttributes = [];
+      }
 
       var customFields = customAttributes.map(function(attr) {
         return {
@@ -93,7 +120,7 @@ function getCategoryFields(categoryGuid) {
       });
 
       return {
-        categoryName: category.name || category.Name,
+        categoryName: categoryName,
         categoryGuid: guid,
         standardFields: standardFields,
         customFields: customFields
