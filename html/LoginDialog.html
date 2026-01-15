@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body {
+      font-family: 'Google Sans', Arial, sans-serif;
+      padding: 20px;
+      margin: 0;
+    }
+
+    .container {
+      max-width: 400px;
+    }
+
+    h2 {
+      color: #1976D2;
+      margin-top: 0;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+      color: #333;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    input[type="email"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #1976D2;
+    }
+
+    .button-group {
+      margin-top: 20px;
+      text-align: right;
+    }
+
+    button {
+      background-color: #1976D2;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      margin-left: 10px;
+    }
+
+    button:hover {
+      background-color: #1565C0;
+    }
+
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    .cancel-btn {
+      background-color: #fff;
+      color: #666;
+      border: 1px solid #ddd;
+    }
+
+    .cancel-btn:hover {
+      background-color: #f5f5f5;
+    }
+
+    .message {
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 4px;
+    }
+
+    .error {
+      background-color: #ffebee;
+      color: #c62828;
+      border: 1px solid #ef5350;
+    }
+
+    .success {
+      background-color: #e8f5e9;
+      color: #2e7d32;
+      border: 1px solid #66bb6a;
+    }
+
+    .info {
+      background-color: #e3f2fd;
+      color: #1976d2;
+      border: 1px solid #64b5f6;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #1976D2;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Login to Arena PLM</h2>
+
+    <div id="messageArea"></div>
+
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required placeholder="your.email@company.com">
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required>
+      </div>
+
+      <div class="form-group">
+        <label for="workspaceId">Workspace ID:</label>
+        <input type="text" id="workspaceId" name="workspaceId" required placeholder="12345">
+      </div>
+
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p>Logging in...</p>
+      </div>
+
+      <div class="button-group">
+        <button type="button" class="cancel-btn" onclick="google.script.host.close()">Cancel</button>
+        <button type="submit" id="loginBtn">Login</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      var email = document.getElementById('email').value.trim();
+      var password = document.getElementById('password').value;
+      var workspaceId = document.getElementById('workspaceId').value.trim();
+
+      // Validate inputs
+      if (!email || !password || !workspaceId) {
+        showMessage('Please fill in all fields', 'error');
+        return;
+      }
+
+      // Show loading
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('loginBtn').disabled = true;
+
+      // Call server-side login function
+      google.script.run
+        .withSuccessHandler(onLoginSuccess)
+        .withFailureHandler(onLoginFailure)
+        .loginUser(email, password, workspaceId);
+    });
+
+    function onLoginSuccess(result) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('loginBtn').disabled = false;
+
+      if (result.success) {
+        showMessage('Login successful! Closing...', 'success');
+
+        // Close dialog after short delay
+        setTimeout(function() {
+          google.script.host.close();
+        }, 1000);
+      } else {
+        showMessage('Login failed: ' + (result.error || 'Unknown error'), 'error');
+      }
+    }
+
+    function onLoginFailure(error) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('loginBtn').disabled = false;
+
+      showMessage('Error: ' + error.message, 'error');
+    }
+
+    function showMessage(message, type) {
+      var messageArea = document.getElementById('messageArea');
+      messageArea.innerHTML = '<div class="message ' + type + '">' + message + '</div>';
+
+      // Auto-hide success messages
+      if (type === 'success') {
+        setTimeout(function() {
+          messageArea.innerHTML = '';
+        }, 3000);
+      }
+    }
+
+    // Helper function exposed to Code.gs
+    function loginUser(email, password, workspaceId) {
+      var client = new ArenaAPIClient();
+      return client.login(email, password, workspaceId);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body {
+      font-family: 'Google Sans', Arial, sans-serif;
+      padding: 20px;
+      margin: 0;
+    }
+
+    h2 {
+      color: #1976D2;
+      margin-top: 0;
+    }
+
+    .section {
+      margin-bottom: 25px;
+    }
+
+    .section-title {
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .fields-container {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 10px;
+      background-color: #fafafa;
+    }
+
+    .field-item {
+      padding: 8px;
+      margin-bottom: 5px;
+      background-color: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .field-item:hover {
+      background-color: #e3f2fd;
+      border-color: #1976D2;
+    }
+
+    .field-item.selected {
+      background-color: #e3f2fd;
+      border-color: #1976D2;
+    }
+
+    .field-item input[type="checkbox"] {
+      margin-right: 10px;
+    }
+
+    .field-name {
+      font-weight: 500;
+      color: #333;
+    }
+
+    .field-description {
+      font-size: 12px;
+      color: #666;
+      margin-top: 3px;
+    }
+
+    .button-group {
+      margin-top: 20px;
+      text-align: right;
+    }
+
+    button {
+      background-color: #1976D2;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      margin-left: 10px;
+    }
+
+    button:hover {
+      background-color: #1565C0;
+    }
+
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    .cancel-btn {
+      background-color: #fff;
+      color: #666;
+      border: 1px solid #ddd;
+    }
+
+    .cancel-btn:hover {
+      background-color: #f5f5f5;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #1976D2;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .message {
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 4px;
+    }
+
+    .error {
+      background-color: #ffebee;
+      color: #c62828;
+      border: 1px solid #ef5350;
+    }
+
+    .info {
+      background-color: #e3f2fd;
+      color: #1976d2;
+      border: 1px solid #64b5f6;
+    }
+  </style>
+</head>
+<body>
+  <h2>Select Category and Fields</h2>
+
+  <div id="messageArea"></div>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p>Loading categories...</p>
+  </div>
+
+  <div id="mainContent" style="display:none;">
+    <div class="section">
+      <div class="section-title">1. Select Category:</div>
+      <select id="categorySelect" onchange="onCategoryChange()">
+        <option value="">-- Select a category --</option>
+      </select>
+    </div>
+
+    <div class="section" id="fieldsSection" style="display:none;">
+      <div class="section-title">2. Select Fields to Map:</div>
+      <div class="fields-container" id="fieldsContainer">
+        <!-- Fields will be populated here -->
+      </div>
+    </div>
+
+    <div class="button-group">
+      <button type="button" class="cancel-btn" onclick="google.script.host.close()">Cancel</button>
+      <button type="button" id="createTokensBtn" onclick="createTokens()" disabled>Create Tokens</button>
+    </div>
+  </div>
+
+  <script>
+    var categories = [];
+    var currentCategoryGuid = null;
+    var currentFields = null;
+    var selectedFields = [];
+
+    // Load categories on page load
+    window.addEventListener('load', function() {
+      loadCategories();
+    });
+
+    function loadCategories() {
+      document.getElementById('loading').style.display = 'block';
+
+      google.script.run
+        .withSuccessHandler(onCategoriesLoaded)
+        .withFailureHandler(onError)
+        .getArenaCategories();
+    }
+
+    function onCategoriesLoaded(cats) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('mainContent').style.display = 'block';
+
+      categories = cats;
+      var select = document.getElementById('categorySelect');
+
+      // Populate category dropdown
+      cats.forEach(function(cat) {
+        var option = document.createElement('option');
+        option.value = cat.guid || cat.Guid;
+        option.textContent = cat.name || cat.Name;
+        select.appendChild(option);
+      });
+    }
+
+    function onCategoryChange() {
+      var select = document.getElementById('categorySelect');
+      currentCategoryGuid = select.value;
+
+      if (!currentCategoryGuid) {
+        document.getElementById('fieldsSection').style.display = 'none';
+        document.getElementById('createTokensBtn').disabled = true;
+        return;
+      }
+
+      // Load fields for this category
+      document.getElementById('loading').style.display = 'block';
+
+      google.script.run
+        .withSuccessHandler(onFieldsLoaded)
+        .withFailureHandler(onError)
+        .getCategoryFields(currentCategoryGuid);
+    }
+
+    function onFieldsLoaded(fieldsData) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('fieldsSection').style.display = 'block';
+
+      currentFields = fieldsData;
+      selectedFields = [];
+
+      var container = document.getElementById('fieldsContainer');
+      container.innerHTML = '';
+
+      // Add standard fields
+      if (fieldsData.standardFields && fieldsData.standardFields.length > 0) {
+        var standardHeader = document.createElement('div');
+        standardHeader.style.fontWeight = 'bold';
+        standardHeader.style.marginBottom = '10px';
+        standardHeader.style.color = '#1976D2';
+        standardHeader.textContent = 'Standard Fields:';
+        container.appendChild(standardHeader);
+
+        fieldsData.standardFields.forEach(function(field) {
+          container.appendChild(createFieldItem(field));
+        });
+      }
+
+      // Add custom fields
+      if (fieldsData.customFields && fieldsData.customFields.length > 0) {
+        var customHeader = document.createElement('div');
+        customHeader.style.fontWeight = 'bold';
+        customHeader.style.marginTop = '15px';
+        customHeader.style.marginBottom = '10px';
+        customHeader.style.color = '#1976D2';
+        customHeader.textContent = 'Custom Fields:';
+        container.appendChild(customHeader);
+
+        fieldsData.customFields.forEach(function(field) {
+          container.appendChild(createFieldItem(field));
+        });
+      }
+
+      document.getElementById('createTokensBtn').disabled = true;
+    }
+
+    function createFieldItem(field) {
+      var div = document.createElement('div');
+      div.className = 'field-item';
+      div.onclick = function() { toggleField(field, div); };
+
+      var checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.id = 'field_' + field.name;
+
+      var label = document.createElement('label');
+      label.htmlFor = 'field_' + field.name;
+      label.className = 'field-name';
+      label.textContent = field.displayName;
+
+      var description = document.createElement('div');
+      description.className = 'field-description';
+      description.textContent = field.description;
+
+      div.appendChild(checkbox);
+      div.appendChild(label);
+      div.appendChild(description);
+
+      return div;
+    }
+
+    function toggleField(field, div) {
+      var checkbox = div.querySelector('input[type="checkbox"]');
+      checkbox.checked = !checkbox.checked;
+
+      if (checkbox.checked) {
+        div.classList.add('selected');
+        selectedFields.push(field);
+      } else {
+        div.classList.remove('selected');
+        selectedFields = selectedFields.filter(function(f) {
+          return f.name !== field.name;
+        });
+      }
+
+      document.getElementById('createTokensBtn').disabled = selectedFields.length === 0;
+    }
+
+    function createTokens() {
+      if (selectedFields.length === 0) {
+        showMessage('Please select at least one field', 'error');
+        return;
+      }
+
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('createTokensBtn').disabled = true;
+
+      google.script.run
+        .withSuccessHandler(onTokensCreated)
+        .withFailureHandler(onError)
+        .createTokenMappings(currentCategoryGuid, selectedFields);
+    }
+
+    function onTokensCreated(result) {
+      document.getElementById('loading').style.display = 'none';
+
+      if (result.success) {
+        showMessage('Token mappings created successfully!', 'info');
+
+        setTimeout(function() {
+          google.script.host.close();
+        }, 1500);
+      } else {
+        showMessage('Error: ' + (result.error || 'Failed to create token mappings'), 'error');
+        document.getElementById('createTokensBtn').disabled = false;
+      }
+    }
+
+    function onError(error) {
+      document.getElementById('loading').style.display = 'none';
+      showMessage('Error: ' + error.message, 'error');
+    }
+
+    function showMessage(message, type) {
+      var messageArea = document.getElementById('messageArea');
+      messageArea.innerHTML = '<div class="message ' + type + '">' + message + '</div>';
+    }
+  </script>
+</body>
+</html>

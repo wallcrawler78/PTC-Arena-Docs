@@ -1,0 +1,26 @@
+{
+  "name": "ptc-arena-docs",
+  "version": "0.1.0",
+  "description": "Google Docs add-on for Arena PLM integration with merge-field capabilities",
+  "main": "src/Code.gs",
+  "scripts": {
+    "push": "clasp push",
+    "pull": "clasp pull",
+    "open": "clasp open",
+    "deploy": "clasp deploy",
+    "version": "clasp version"
+  },
+  "keywords": [
+    "google-docs",
+    "arena",
+    "plm",
+    "merge-fields",
+    "document-automation"
+  ],
+  "author": "Daniel Bacon",
+  "license": "MIT",
+  "devDependencies": {
+    "@google/clasp": "^2.4.2",
+    "@types/google-apps-script": "^1.0.83"
+  }
+}

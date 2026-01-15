@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body {
+      font-family: 'Google Sans', Arial, sans-serif;
+      padding: 20px;
+      margin: 0;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      color: #1976D2;
+      margin-bottom: 5px;
+    }
+
+    .version {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .section {
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .section-content {
+      color: #666;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    a {
+      color: #1976D2;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    button {
+      width: 100%;
+      background-color: #1976D2;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      margin-top: 20px;
+    }
+
+    button:hover {
+      background-color: #1565C0;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h2>Arena PLM for Google Docs</h2>
+    <div class="version">Version 0.1.0-alpha</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">About</div>
+    <div class="section-content">
+      A Google Docs add-on that enables powerful merge-field capabilities with PTC Arena PLM data.
+      Create document templates with Arena field tokens, search for items, and automatically populate
+      documents with live PLM data.
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Features</div>
+    <div class="section-content">
+      • Category-based field mapping<br>
+      • Drag-and-drop token insertion<br>
+      • Arena search integration<br>
+      • Smart document population<br>
+      • Document revisioning support
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Support</div>
+    <div class="section-content">
+      For issues or questions, visit:<br>
+      <a href="https://github.com/wallcrawler78/PTC-Arena-Docs" target="_blank">
+        github.com/wallcrawler78/PTC-Arena-Docs
+      </a>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">License</div>
+    <div class="section-content">
+      MIT License © 2026
+    </div>
+  </div>
+
+  <button onclick="google.script.host.close()">Close</button>
+</body>
+</html>
