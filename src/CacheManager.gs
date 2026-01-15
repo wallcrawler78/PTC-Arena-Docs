@@ -217,17 +217,38 @@ var CacheManager = (function() {
    */
   CacheManager.prototype.invalidateArenaCache = function() {
     Logger.log('Invalidating all Arena cache...');
+
+    var cache = this._getCache('user');
+    var fieldCachesCleared = 0;
+
+    // First, try to get cached categories to know which field caches to clear
+    try {
+      var categories = this.get(CACHE_CONFIG.CATEGORIES.key, CACHE_CONFIG.CATEGORIES.type);
+      if (categories && categories.length > 0) {
+        Logger.log('Found ' + categories.length + ' categories in cache, clearing associated field caches');
+        for (var i = 0; i < categories.length; i++) {
+          var categoryGuid = categories[i].guid;
+          if (categoryGuid) {
+            var fieldCacheKey = CACHE_CONFIG.FIELDS.keyPrefix + categoryGuid;
+            cache.remove(fieldCacheKey);
+            fieldCachesCleared++;
+            Logger.log('Cleared field cache: ' + fieldCacheKey);
+          }
+        }
+      }
+    } catch (e) {
+      Logger.log('Could not use categories to clear field caches: ' + e.message);
+    }
+
+    // Now clear the main caches
     this.remove(CACHE_CONFIG.CATEGORIES.key, CACHE_CONFIG.CATEGORIES.type);
     this.remove(CACHE_CONFIG.SESSION.key, CACHE_CONFIG.SESSION.type);
 
-    // Clear field caches - brute force since we don't track all keys
-    var cache = this._getCache('user');
-    for (var i = 0; i < 200; i++) {
-      cache.remove(CACHE_CONFIG.FIELDS.keyPrefix + i);
-    }
-
-    Logger.log('Arena cache invalidated');
-    return { success: true, message: 'Cache cleared successfully' };
+    Logger.log('Arena cache invalidated - Cleared ' + fieldCachesCleared + ' field caches');
+    return {
+      success: true,
+      message: 'Cache cleared successfully. Cleared ' + fieldCachesCleared + ' field caches.'
+    };
   };
 
   /**
