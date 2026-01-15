@@ -228,12 +228,35 @@ function findElementAtPosition(body, position) {
 
   for (var i = 0; i < body.getNumChildren(); i++) {
     var child = body.getChild(i);
-    var childText = child.asText ? child.asText().getText() : child.getText();
+
+    // Handle different element types
+    var childText = '';
+    var textElement = null;
+    var parentElement = null;
+
+    if (child.getType() === DocumentApp.ElementType.PARAGRAPH) {
+      var para = child.asParagraph();
+      childText = para.getText();
+      textElement = para.editAsText();
+      parentElement = para;
+    } else if (child.getType() === DocumentApp.ElementType.LIST_ITEM) {
+      var listItem = child.asListItem();
+      childText = listItem.getText();
+      textElement = listItem.editAsText();
+      parentElement = listItem;
+    } else if (child.getType() === DocumentApp.ElementType.TABLE) {
+      // Skip tables for now - too complex
+      childText = child.getText();
+    } else {
+      childText = child.getText ? child.getText() : '';
+    }
+
     var childLength = childText.length + 1; // +1 for newline
 
-    if (currentPosition + childLength > position) {
+    if (currentPosition + childLength > position && textElement) {
       return {
-        element: child,
+        textElement: textElement,
+        parentElement: parentElement,
         offset: position - currentPosition
       };
     }
@@ -242,7 +265,8 @@ function findElementAtPosition(body, position) {
   }
 
   return {
-    element: null,
+    textElement: null,
+    parentElement: null,
     offset: 0
   };
 }
@@ -371,6 +395,41 @@ function getCommonVariations(fieldName) {
 }
 
 /**
+ * Detects placeholder text patterns after a field label
+ * @private
+ * @param {string} textAfterMatch - Text immediately after the matched field label
+ * @return {number} Length of placeholder to replace (0 if none found)
+ */
+function detectPlaceholder(textAfterMatch) {
+  // Common placeholder patterns
+  var patterns = [
+    /^\s*:?\s*_{3,}/,           // Underscores: "___________" or ": ___________"
+    /^\s*:?\s*-{3,}/,           // Dashes: "-----------" or ": -----------"
+    /^\s*:?\s*MM-DD-YYYY/i,    // Date format: "MM-DD-YYYY"
+    /^\s*:?\s*YYYY-MM-DD/i,    // Date format: "YYYY-MM-DD"
+    /^\s*:?\s*DD\/MM\/YYYY/i,  // Date format: "DD/MM/YYYY"
+    /^\s*:?\s*\[.*?\]/,        // Brackets: "[placeholder]"
+    /^\s*:?\s*<.*?>/,          // Angle brackets: "<placeholder>"
+    /^\s*:?\s*TBD/i,           // "TBD"
+    /^\s*:?\s*N\/A/i,          // "N/A"
+    /^\s*:?\s*\(.*?\)/         // Parentheses: "(placeholder)"
+  ];
+
+  var match = null;
+  var matchLength = 0;
+
+  for (var i = 0; i < patterns.length; i++) {
+    match = textAfterMatch.match(patterns[i]);
+    if (match) {
+      matchLength = match[0].length;
+      break;
+    }
+  }
+
+  return matchLength;
+}
+
+/**
  * Escapes special regex characters
  * @private
  * @param {string} str - String to escape
@@ -402,28 +461,44 @@ function insertAutodetectedTokens(selectedSuggestions, categoryGuid, categoryNam
       try {
         // Re-find the element at this position (element refs don't survive serialization)
         var elementInfo = findElementAtPosition(body, suggestion.position + suggestion.matchedText.length);
-        var element = elementInfo.element;
+        var textElement = elementInfo.textElement;
+        var parentElement = elementInfo.parentElement;
         var offset = elementInfo.offset;
 
-        if (!element || !element.asText) {
+        if (!textElement || !parentElement) {
           Logger.log('Could not find valid text element at position ' + suggestion.position);
           return;
         }
 
+        // Get the text after the match to check for placeholders
+        var fullText = textElement.getText();
+        var textAfterMatch = fullText.substring(offset);
+
+        // Detect and measure placeholder to replace
+        var placeholderLength = detectPlaceholder(textAfterMatch);
+
         // Insert token text
         var tokenText = '{{ARENA:' + categoryName + ':' + suggestion.fieldName + '}}';
 
-        // Insert the token
-        element.asText().insertText(offset, ' ' + tokenText);
+        // Replace placeholder if found, otherwise just insert
+        if (placeholderLength > 0) {
+          // Delete placeholder
+          textElement.deleteText(offset, offset + placeholderLength - 1);
+          // Insert token
+          textElement.insertText(offset, tokenText);
+        } else {
+          // Insert token with a space
+          textElement.insertText(offset, ' ' + tokenText);
+        }
 
         // Apply token styling
-        var startIdx = offset + 1; // +1 for space
-        element.asText().setBackgroundColor(startIdx, startIdx + tokenText.length - 1, '#E8F4F8');
-        element.asText().setForegroundColor(startIdx, startIdx + tokenText.length - 1, '#1976D2');
-        element.asText().setBold(startIdx, startIdx + tokenText.length - 1, true);
+        var startIdx = placeholderLength > 0 ? offset : offset + 1; // +1 for space if no placeholder
+        textElement.setBackgroundColor(startIdx, startIdx + tokenText.length - 1, '#E8F4F8');
+        textElement.setForegroundColor(startIdx, startIdx + tokenText.length - 1, '#1976D2');
+        textElement.setBold(startIdx, startIdx + tokenText.length - 1, true);
 
-        // Create bookmark
-        var bookmarkPos = doc.newPosition(element, startIdx);
+        // Create bookmark at token position
+        var bookmarkPos = doc.newPosition(parentElement, startIdx);
         var bookmark = doc.addBookmark(bookmarkPos);
 
         // Store metadata
