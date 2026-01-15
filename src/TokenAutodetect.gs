@@ -275,8 +275,31 @@ function findElementAtPosition(body, position) {
       textElement = listItem.editAsText();
       parentElement = listItem;
     } else if (child.getType() === DocumentApp.ElementType.TABLE) {
-      // Skip tables for now - too complex
-      childText = child.getText();
+      // Handle table - find which cell contains the position
+      var table = child.asTable();
+      var tableCumulativePos = currentPosition;
+
+      for (var row = 0; row < table.getNumRows(); row++) {
+        var tableRow = table.getRow(row);
+        for (var col = 0; col < tableRow.getNumCells(); col++) {
+          var cell = tableRow.getCell(col);
+          var cellText = cell.getText();
+          var cellLength = cellText.length + 1; // +1 for cell separator
+
+          if (tableCumulativePos + cellLength > position) {
+            return {
+              textElement: cell.editAsText(),
+              parentElement: cell,
+              offset: position - tableCumulativePos
+            };
+          }
+
+          tableCumulativePos += cellLength;
+        }
+      }
+
+      childText = table.getText();
+      childLength = tableCumulativePos - currentPosition;
     } else {
       childText = child.getText ? child.getText() : '';
     }
@@ -482,23 +505,23 @@ function insertAutodetectedTokens(selectedSuggestions, categoryGuid, categoryNam
     var body = doc.getBody();
     var tokensInserted = 0;
 
-    // Sort by position descending (insert from end first to avoid position shifts)
-    var sortedSuggestions = selectedSuggestions.slice().sort(function(a, b) {
-      return b.position - a.position;
-    });
-
-    sortedSuggestions.forEach(function(suggestion) {
+    // Process suggestions one at a time using document search
+    selectedSuggestions.forEach(function(suggestion) {
       try {
-        // Re-find the element at this position (element refs don't survive serialization)
-        var elementInfo = findElementAtPosition(body, suggestion.position + suggestion.matchedText.length);
-        var textElement = elementInfo.textElement;
-        var parentElement = elementInfo.parentElement;
-        var offset = elementInfo.offset;
+        // Use Google Docs search to find the matched text in context
+        // This is more reliable than position-based lookup
+        var searchPattern = escapeRegex(suggestion.matchedText);
+        var rangeElement = body.findText(searchPattern);
 
-        if (!textElement || !parentElement) {
-          Logger.log('Could not find valid text element at position ' + suggestion.position);
+        if (!rangeElement) {
+          Logger.log('Could not find text "' + suggestion.matchedText + '" in document');
           return;
         }
+
+        var textElement = rangeElement.getElement().asText();
+        var start = rangeElement.getStartOffset();
+        var end = rangeElement.getEndOffsetInclusive();
+        var offset = end + 1; // Insert after the matched text
 
         // Get the text after the match to check for placeholders
         var fullText = textElement.getText();
@@ -527,29 +550,35 @@ function insertAutodetectedTokens(selectedSuggestions, categoryGuid, categoryNam
         textElement.setForegroundColor(startIdx, startIdx + tokenText.length - 1, '#1976D2');
         textElement.setBold(startIdx, startIdx + tokenText.length - 1, true);
 
-        // Create bookmark at token position
-        var bookmarkPos = doc.newPosition(parentElement, startIdx);
-        var bookmark = doc.addBookmark(bookmarkPos);
-
-        // Store metadata
-        var metadata = {
-          bookmarkId: bookmark.getId(),
-          tokenText: tokenText,
-          categoryName: categoryName,
-          categoryGuid: categoryGuid,
-          fieldName: suggestion.fieldName,
-          fieldType: suggestion.fieldType,
-          attributeGuid: suggestion.attributeGuid,
-          createdAt: new Date().toISOString(),
-          source: 'autodetect',
-          detectedFrom: suggestion.matchedText,
-          confidence: suggestion.confidence
-        };
-
-        var docProps = PropertiesService.getDocumentProperties();
-        docProps.setProperty('token_' + bookmark.getId(), JSON.stringify(metadata));
-
+        // Count this as inserted (even if bookmark fails)
         tokensInserted++;
+
+        // Try to create bookmark and metadata (optional, may fail)
+        try {
+          var parentElement = textElement.getParent();
+          var bookmarkPos = doc.newPosition(parentElement, startIdx);
+          var bookmark = doc.addBookmark(bookmarkPos);
+
+          // Store metadata
+          var metadata = {
+            bookmarkId: bookmark.getId(),
+            tokenText: tokenText,
+            categoryName: categoryName,
+            categoryGuid: categoryGuid,
+            fieldName: suggestion.fieldName,
+            fieldType: suggestion.fieldType,
+            attributeGuid: suggestion.attributeGuid,
+            createdAt: new Date().toISOString(),
+            source: 'autodetect',
+            detectedFrom: suggestion.matchedText,
+            confidence: suggestion.confidence
+          };
+
+          var docProps = PropertiesService.getDocumentProperties();
+          docProps.setProperty('token_' + bookmark.getId(), JSON.stringify(metadata));
+        } catch (bookmarkError) {
+          Logger.log('Could not create bookmark for ' + suggestion.fieldName + ': ' + bookmarkError.message);
+        }
 
       } catch (error) {
         Logger.log('Error inserting token for ' + suggestion.fieldName + ': ' + error.message);
