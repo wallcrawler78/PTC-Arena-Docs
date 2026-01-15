@@ -181,6 +181,31 @@ function generateFieldPatterns(field) {
 }
 
 /**
+ * Checks if a position is inside an existing Arena token
+ * @private
+ * @param {string} text - Full document text
+ * @param {number} position - Position to check
+ * @param {number} length - Length of match
+ * @return {boolean} True if inside an Arena token
+ */
+function isInsideArenaToken(text, position, length) {
+  // Look backwards for token start
+  var searchStart = Math.max(0, position - 100); // Look back up to 100 chars
+  var beforeText = text.substring(searchStart, position + length);
+
+  // Check if we're between {{ARENA: and }}
+  var lastTokenStart = beforeText.lastIndexOf('{{ARENA:');
+  var lastTokenEnd = beforeText.lastIndexOf('}}');
+
+  // If we found a token start after the last token end, we're inside a token
+  if (lastTokenStart !== -1 && (lastTokenEnd === -1 || lastTokenStart > lastTokenEnd)) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
  * Finds all matches for a pattern in the document
  * @private
  * @param {Body} body - Document body
@@ -195,6 +220,11 @@ function findPatternMatches(body, text, pattern) {
   while ((match = pattern.regex.exec(text)) !== null) {
     var matchText = match[0];
     var position = match.index;
+
+    // Skip if this match is inside an existing Arena token
+    if (isInsideArenaToken(text, position, matchText.length)) {
+      continue;
+    }
 
     // Get context (30 chars before and after)
     var contextStart = Math.max(0, position - 30);
