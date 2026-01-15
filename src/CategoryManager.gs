@@ -4,13 +4,20 @@
  */
 
 /**
- * Gets all categories from Arena
+ * Gets all categories from Arena (with caching)
  * @return {Array} Array of categories
  */
 function getArenaCategories() {
   try {
-    var client = createArenaClient();
-    return client.getCategories();
+    var cacheManager = createCacheManager();
+
+    // Try to get from cache first
+    return cacheManager.getCachedCategories(function() {
+      // Cache miss - fetch from API
+      Logger.log('Fetching categories from Arena API...');
+      var client = createArenaClient();
+      return client.getCategories();
+    });
   } catch (error) {
     Logger.log('Error getting categories: ' + error.message);
     throw error;
@@ -18,73 +25,80 @@ function getArenaCategories() {
 }
 
 /**
- * Gets attributes/fields for a specific category
+ * Gets attributes/fields for a specific category (with caching)
  * @param {string} categoryGuid - Category GUID
  * @return {Object} Object with standard and custom fields
  */
 function getCategoryFields(categoryGuid) {
   try {
-    var client = createArenaClient();
-    var category = client.getCategoryByGuid(categoryGuid);
+    var cacheManager = createCacheManager();
 
-    if (!category) {
-      throw new Error('Category not found');
-    }
+    // Try to get from cache first
+    return cacheManager.getCachedFields(categoryGuid, function(guid) {
+      // Cache miss - fetch from API
+      Logger.log('Fetching fields for category ' + guid + ' from Arena API...');
+      var client = createArenaClient();
+      var category = client.getCategoryByGuid(guid);
 
-    // Standard fields available for all categories
-    var standardFields = [
-      {
-        name: 'number',
-        displayName: 'Item Number',
-        type: 'standard',
-        description: 'Arena item number'
-      },
-      {
-        name: 'name',
-        displayName: 'Name',
-        type: 'standard',
-        description: 'Item name'
-      },
-      {
-        name: 'description',
-        displayName: 'Description',
-        type: 'standard',
-        description: 'Item description'
-      },
-      {
-        name: 'revisionNumber',
-        displayName: 'Revision',
-        type: 'standard',
-        description: 'Current revision number'
-      },
-      {
-        name: 'lifecyclePhase',
-        displayName: 'Lifecycle Phase',
-        type: 'standard',
-        description: 'Current lifecycle phase'
+      if (!category) {
+        throw new Error('Category not found');
       }
-    ];
 
-    // Get custom attributes for this category
-    var customAttributes = client.getCategoryAttributes(categoryGuid);
+      // Standard fields available for all categories
+      var standardFields = [
+        {
+          name: 'number',
+          displayName: 'Item Number',
+          type: 'standard',
+          description: 'Arena item number'
+        },
+        {
+          name: 'name',
+          displayName: 'Name',
+          type: 'standard',
+          description: 'Item name'
+        },
+        {
+          name: 'description',
+          displayName: 'Description',
+          type: 'standard',
+          description: 'Item description'
+        },
+        {
+          name: 'revisionNumber',
+          displayName: 'Revision',
+          type: 'standard',
+          description: 'Current revision number'
+        },
+        {
+          name: 'lifecyclePhase',
+          displayName: 'Lifecycle Phase',
+          type: 'standard',
+          description: 'Current lifecycle phase'
+        }
+      ];
 
-    var customFields = customAttributes.map(function(attr) {
+      // Get custom attributes for this category
+      var customAttributes = client.getCategoryAttributes(guid);
+
+      var customFields = customAttributes.map(function(attr) {
+        return {
+          name: attr.name || attr.Name,
+          displayName: attr.name || attr.Name,
+          guid: attr.guid || attr.Guid,
+          type: 'custom',
+          fieldType: attr.fieldType || attr.FieldType,
+          description: 'Custom attribute'
+        };
+      });
+
       return {
-        name: attr.name || attr.Name,
-        displayName: attr.name || attr.Name,
-        guid: attr.guid || attr.Guid,
-        type: 'custom',
-        fieldType: attr.fieldType || attr.FieldType,
-        description: 'Custom attribute'
+        categoryName: category.name || category.Name,
+        categoryGuid: guid,
+        standardFields: standardFields,
+        customFields: customFields
       };
     });
-
-    return {
-      categoryName: category.name || category.Name,
-      categoryGuid: categoryGuid,
-      standardFields: standardFields,
-      customFields: customFields
-    };
   } catch (error) {
     Logger.log('Error getting category fields: ' + error.message);
     throw error;

@@ -337,10 +337,23 @@ function showTokenMappings() {
  * Clears all caches
  */
 function clearAllCaches() {
-  var cache = CacheService.getUserCache();
-  cache.removeAll(['arena_categories', 'arena_items', 'arena_search_results']);
+  try {
+    var cacheManager = createCacheManager();
+    cacheManager.invalidateArenaCache();
 
-  DocumentApp.getUi().alert('Success', 'All caches have been cleared.', DocumentApp.getUi().ButtonSet.OK);
+    DocumentApp.getUi().alert(
+      'Success',
+      'All Arena PLM caches have been cleared.\n\nCategories and fields will be refreshed on next access.',
+      DocumentApp.getUi().ButtonSet.OK
+    );
+  } catch (error) {
+    Logger.log('Error clearing caches: ' + error.message);
+    DocumentApp.getUi().alert(
+      'Error',
+      'Failed to clear caches: ' + error.message,
+      DocumentApp.getUi().ButtonSet.OK
+    );
+  }
 }
 
 /**
