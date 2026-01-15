@@ -634,9 +634,39 @@
       wizardData.categoryGuid = categoryGuid;
 
       google.script.run
-        .withSuccessHandler(function(fields) {
-          allFields = fields;
-          renderFieldCheckboxes(fields);
+        .withSuccessHandler(function(fieldsData) {
+          // getCategoryFields returns {standardFields: [...], customFields: [...]}
+          // Combine into a single array with isStandard flag
+          var combinedFields = [];
+
+          if (fieldsData.standardFields) {
+            fieldsData.standardFields.forEach(function(field) {
+              combinedFields.push({
+                displayName: field.displayName || field.name,
+                apiName: field.name,
+                fieldType: field.fieldType || 'SINGLELINE',
+                attributeGuid: null,
+                description: field.description,
+                isStandard: true
+              });
+            });
+          }
+
+          if (fieldsData.customFields) {
+            fieldsData.customFields.forEach(function(field) {
+              combinedFields.push({
+                displayName: field.displayName || field.name,
+                apiName: field.name,
+                fieldType: field.fieldType || 'SINGLELINE',
+                attributeGuid: field.guid,
+                description: field.description,
+                isStandard: false
+              });
+            });
+          }
+
+          allFields = combinedFields;
+          renderFieldCheckboxes(combinedFields);
           document.getElementById('fieldsSection').style.display = 'block';
         })
         .withFailureHandler(function(error) {
