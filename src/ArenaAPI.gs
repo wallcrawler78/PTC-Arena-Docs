@@ -66,15 +66,21 @@ var ArenaAPIClient = (function() {
         var sessionId = result.arenaSessionId || result.ArenaSessionId;
 
         if (sessionId) {
-          // Store credentials
+          // Store credentials with timestamp for session management
           var userProps = PropertiesService.getUserProperties();
+          var now = new Date().getTime();
+
           userProps.setProperties({
             'arena_email': email,
             'arena_session_id': sessionId,
-            'arena_workspace_id': workspaceId
+            'arena_workspace_id': workspaceId,
+            'arena_session_timestamp': now.toString(),
+            'arena_session_last_validated': now.toString()
           });
 
           this.sessionId = sessionId;
+
+          Logger.log('Arena login successful. Session will be kept alive automatically.');
 
           return {
             success: true,
@@ -105,7 +111,91 @@ var ArenaAPIClient = (function() {
   };
 
   /**
+   * Validates that the current session is still active
+   * Makes a lightweight API call to keep session alive
+   * @return {boolean} True if session is valid, false otherwise
+   */
+  ArenaAPIClient.prototype.validateSession = function() {
+    if (!this.sessionId) {
+      return false;
+    }
+
+    try {
+      // Make a lightweight request to check session validity
+      // Using /settings/users/me as it's a small response
+      var url = ARENA_BASE_URL + '/settings/users/me';
+
+      var options = {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'arena_session_id': this.sessionId
+        },
+        muteHttpExceptions: true
+      };
+
+      var response = UrlFetchApp.fetch(url, options);
+      var responseCode = response.getResponseCode();
+
+      if (responseCode === 200) {
+        // Session is valid - update last validated timestamp
+        var userProps = PropertiesService.getUserProperties();
+        userProps.setProperty('arena_session_last_validated', new Date().getTime().toString());
+        return true;
+      } else if (responseCode === 401) {
+        // Session expired
+        Logger.log('Session validation failed: 401 Unauthorized');
+        return false;
+      } else {
+        // Other error - assume session might still be valid
+        Logger.log('Session validation returned ' + responseCode + ', assuming valid');
+        return true;
+      }
+    } catch (error) {
+      Logger.log('Session validation error: ' + error.message);
+      // Network error - assume session might still be valid
+      return true;
+    }
+  };
+
+  /**
+   * Checks if session validation is needed based on time since last validation
+   * Validates session every 30 minutes to keep it alive
+   * @private
+   * @return {boolean} True if validation was successful or not needed
+   */
+  ArenaAPIClient.prototype._checkSessionHealth = function() {
+    if (!this.sessionId) {
+      return false;
+    }
+
+    var userProps = PropertiesService.getUserProperties();
+    var lastValidated = userProps.getProperty('arena_session_last_validated');
+
+    if (!lastValidated) {
+      // No validation timestamp, validate now
+      return this.validateSession();
+    }
+
+    var lastValidatedTime = parseInt(lastValidated);
+    var now = new Date().getTime();
+    var timeSinceValidation = now - lastValidatedTime;
+
+    // Validate every 30 minutes (1800000 ms) to keep session alive
+    var VALIDATION_INTERVAL = 30 * 60 * 1000;
+
+    if (timeSinceValidation > VALIDATION_INTERVAL) {
+      Logger.log('Session validation needed (last validated ' + Math.round(timeSinceValidation / 60000) + ' minutes ago)');
+      return this.validateSession();
+    }
+
+    // Session validated recently, no need to check again
+    return true;
+  };
+
+  /**
    * Makes an authenticated request to Arena API
+   * Automatically validates session health before making requests
    * @private
    * @param {string} endpoint - API endpoint (e.g., '/items')
    * @param {Object} options - Request options (method, payload, etc.)
@@ -113,6 +203,9 @@ var ArenaAPIClient = (function() {
    */
   ArenaAPIClient.prototype._makeRequest = function(endpoint, options) {
     options = options || {};
+
+    // Check session health before making request (validates every 30 min)
+    this._checkSessionHealth();
 
     var url = ARENA_BASE_URL + endpoint;
 

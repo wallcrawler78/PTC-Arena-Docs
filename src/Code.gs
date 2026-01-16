@@ -15,6 +15,14 @@ function onInstall(e) {
 }
 
 /**
+ * Refreshes the Arena PLM menu based on current login state
+ * Call this after login/logout to update the menu without reloading
+ */
+function refreshArenaMenu() {
+  onOpen();
+}
+
+/**
  * Runs when a document is opened
  * Creates the Arena PLM menu
  */
@@ -84,13 +92,42 @@ function onOpen(e) {
 
 /**
  * Checks if user is currently logged into Arena
- * @return {boolean} True if logged in, false otherwise
+ * Validates session if it hasn't been checked recently
+ * @return {boolean} True if logged in with valid session, false otherwise
  */
 function isUserLoggedIn() {
   var userProps = PropertiesService.getUserProperties();
   var sessionId = userProps.getProperty('arena_session_id');
 
-  return sessionId !== null && sessionId !== '';
+  if (!sessionId || sessionId === '') {
+    return false;
+  }
+
+  // Check session age - if very old (> 48 hours), validate it
+  var sessionTimestamp = userProps.getProperty('arena_session_timestamp');
+  if (sessionTimestamp) {
+    var sessionAge = new Date().getTime() - parseInt(sessionTimestamp);
+    var MAX_SESSION_AGE = 48 * 60 * 60 * 1000; // 48 hours
+
+    if (sessionAge > MAX_SESSION_AGE) {
+      // Session is too old, validate it
+      try {
+        var client = new ArenaAPIClient();
+        var isValid = client.validateSession();
+        if (!isValid) {
+          // Session invalid, clear it
+          logout();
+          return false;
+        }
+      } catch (error) {
+        // Validation failed, assume invalid
+        Logger.log('Session validation error in isUserLoggedIn: ' + error.message);
+        return false;
+      }
+    }
+  }
+
+  return true;
 }
 
 /**
@@ -118,22 +155,27 @@ function showLogoutDialog() {
 
   if (response === ui.Button.YES) {
     logout();
-    ui.alert('Success', 'You have been logged out from Arena PLM.', ui.ButtonSet.OK);
+    refreshArenaMenu(); // Refresh menu to show Login button
+    ui.alert('Success', 'You have been logged out from Arena PLM. Menu updated to show Login.', ui.ButtonSet.OK);
   }
 }
 
 /**
- * Logs out the user by clearing credentials
+ * Logs out the user by clearing credentials and session data
  */
 function logout() {
   var userProps = PropertiesService.getUserProperties();
   userProps.deleteProperty('arena_email');
   userProps.deleteProperty('arena_session_id');
   userProps.deleteProperty('arena_workspace_id');
+  userProps.deleteProperty('arena_session_timestamp');
+  userProps.deleteProperty('arena_session_last_validated');
 
   // Clear user-specific caches
   var cache = CacheService.getUserCache();
   cache.removeAll(['arena_categories', 'arena_items', 'arena_search_results']);
+
+  Logger.log('User logged out successfully');
 }
 
 /**

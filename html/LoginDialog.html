@@ -226,12 +226,17 @@
           google.script.run.clearSavedLoginCredentials();
         }
 
-        showMessage('Login successful! Closing...', 'success');
+        showMessage('Login successful! Menu updating...', 'success');
 
-        // Close dialog after short delay
-        setTimeout(function() {
-          google.script.host.close();
-        }, 1000);
+        // Refresh the menu to show Logout button
+        google.script.run
+          .withSuccessHandler(function() {
+            // Close dialog after menu refresh
+            setTimeout(function() {
+              google.script.host.close();
+            }, 500);
+          })
+          .refreshArenaMenu();
       } else {
         showMessage('Login failed: ' + (result.error || 'Unknown error'), 'error');
       }
