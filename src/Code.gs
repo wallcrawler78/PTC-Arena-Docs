@@ -341,9 +341,16 @@ function clearAllCaches() {
     var cacheManager = createCacheManager();
     cacheManager.invalidateArenaCache();
 
+    // Also clear Gemini request history
+    var userProps = PropertiesService.getUserProperties();
+    userProps.deleteProperty('gemini_request_history');
+
     DocumentApp.getUi().alert(
       'Success',
-      'All Arena PLM caches have been cleared.\n\nCategories and fields will be refreshed on next access.',
+      'All caches have been cleared:\n\n' +
+      '✓ Arena PLM caches\n' +
+      '✓ Gemini API request history\n\n' +
+      'You can now use AI generation without rate limit issues.',
       DocumentApp.getUi().ButtonSet.OK
     );
   } catch (error) {
