@@ -68,6 +68,9 @@ function onOpen(e) {
 
   menu.addSeparator();
 
+  // Help
+  menu.addItem('Help & User Guide', 'showHelpDialog');
+
   // Settings submenu
   var settingsMenu = ui.createMenu('Settings')
     .addItem('Manage Token Mappings', 'showTokenMappings')
@@ -368,11 +371,23 @@ function clearAllCaches() {
  */
 function showAboutDialog() {
   var html = HtmlService.createHtmlOutputFromFile('html/AboutDialog')
-    .setWidth(400)
-    .setHeight(300)
+    .setWidth(500)
+    .setHeight(600)
     .setTitle('About Arena PLM for Docs');
 
   DocumentApp.getUi().showModalDialog(html, 'About');
+}
+
+/**
+ * Shows the help dialog
+ */
+function showHelpDialog() {
+  var html = HtmlService.createHtmlOutputFromFile('html/HelpDialog')
+    .setWidth(650)
+    .setHeight(700)
+    .setTitle('Arena PLM - User Guide');
+
+  DocumentApp.getUi().showModalDialog(html, 'User Guide');
 }
 
 /**

@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body {
+      font-family: 'Google Sans', Arial, sans-serif;
+      padding: 20px;
+      margin: 0;
+      max-width: 600px;
+    }
+
+    h2 {
+      color: #1976D2;
+      margin-top: 0;
+      margin-bottom: 10px;
+      font-size: 24px;
+      border-bottom: 2px solid #1976D2;
+      padding-bottom: 10px;
+    }
+
+    .subtitle {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 25px;
+    }
+
+    .menu-section {
+      margin-bottom: 30px;
+    }
+
+    .menu-title {
+      font-weight: 600;
+      font-size: 16px;
+      color: #1976D2;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .menu-icon {
+      font-size: 18px;
+    }
+
+    .menu-item {
+      background-color: #f8f9fa;
+      padding: 12px 15px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      border-left: 4px solid #1976D2;
+      transition: background-color 0.2s;
+    }
+
+    .menu-item:hover {
+      background-color: #e8f4f8;
+    }
+
+    .menu-item-name {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+
+    .menu-item-desc {
+      color: #666;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .info-box {
+      background-color: #e3f2fd;
+      padding: 15px;
+      border-radius: 6px;
+      border-left: 4px solid #1976D2;
+      margin-bottom: 25px;
+    }
+
+    .info-box-title {
+      font-weight: 600;
+      color: #1976D2;
+      margin-bottom: 8px;
+    }
+
+    .info-box-content {
+      color: #1976D2;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .workflow-box {
+      background-color: #f5f5f5;
+      padding: 15px;
+      border-radius: 6px;
+      margin: 20px 0;
+    }
+
+    .workflow-title {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 15px;
+    }
+
+    .workflow-steps {
+      counter-reset: step-counter;
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .workflow-steps li {
+      counter-increment: step-counter;
+      padding-left: 35px;
+      position: relative;
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: #666;
+    }
+
+    .workflow-steps li:before {
+      content: counter(step-counter);
+      position: absolute;
+      left: 0;
+      top: 0;
+      background-color: #1976D2;
+      color: white;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    button {
+      width: 100%;
+      background-color: #1976D2;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      margin-top: 20px;
+    }
+
+    button:hover {
+      background-color: #1565C0;
+    }
+
+    .quick-tip {
+      background-color: #fff3cd;
+      padding: 10px 12px;
+      border-radius: 4px;
+      border-left: 4px solid #ffc107;
+      font-size: 13px;
+      color: #856404;
+      margin-top: 15px;
+    }
+
+    .quick-tip strong {
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <h2>📖 User Guide</h2>
+  <div class="subtitle">Complete guide to Arena PLM for Google Docs</div>
+
+  <div class="info-box">
+    <div class="info-box-title">What This Add-On Does</div>
+    <div class="info-box-content">
+      This add-on seamlessly integrates PTC Arena PLM data into your Google Docs. Create document templates
+      with Arena field tokens (like merge fields), then automatically populate them with live data from Arena.
+      Perfect for SOPs, work instructions, technical specs, and any documentation that needs PLM data.
+    </div>
+  </div>
+
+  <div class="workflow-box">
+    <div class="workflow-title">📋 Typical Workflow</div>
+    <ul class="workflow-steps">
+      <li>Login to Arena PLM</li>
+      <li>Insert tokens into your document (manually or with AI)</li>
+      <li>Search for an Arena item</li>
+      <li>Populate the document with that item's data</li>
+      <li>Tokens are replaced with live Arena data</li>
+    </ul>
+  </div>
+
+  <!-- Login/Logout Section -->
+  <div class="menu-section">
+    <div class="menu-title">
+      <span class="menu-icon">🔐</span>
+      <span>Authentication</span>
+    </div>
+
+    <div class="menu-item">
+      <div class="menu-item-name">Login</div>
+      <div class="menu-item-desc">
+        Connect to your Arena PLM account. You'll need your email, password, and workspace ID.
+        Use "Remember email and workspace ID" to save time on future logins.
+      </div>
+    </div>
+
+    <div class="menu-item">
+      <div class="menu-item-name">Logout</div>
+      <div class="menu-item-desc">
+        Disconnect from Arena PLM. Your session will end and you'll need to login again to use PLM features.
+      </div>
+    </div>
+  </div>
+
+  <!-- Insert Tokens Section -->
+  <div class="menu-section">
+    <div class="menu-title">
+      <span class="menu-icon">➕</span>
+      <span>Insert Tokens</span>
+    </div>
+
+    <div class="menu-item">
+      <div class="menu-item-name">Select Category...</div>
+      <div class="menu-item-desc">
+        Choose an Arena category and select which fields to map as tokens. Creates a palette of tokens
+        you can drag and drop into your document wherever you need Arena data.
+      </div>
+    </div>
+
+    <div class="menu-item">
+      <div class="menu-item-name">Show Token Palette</div>
+      <div class="menu-item-desc">
+        Opens a sidebar showing all available tokens for previously selected categories.
+        Click any token to insert it at your cursor position. Organized by category for easy access.
+      </div>
+    </div>
+  </div>
+
+  <!-- Populate from Arena Section -->
+  <div class="menu-section">
+    <div class="menu-title">
+      <span class="menu-icon">🔍</span>
+      <span>Populate from Arena</span>
+    </div>
+
+    <div class="menu-item">
+      <div class="menu-item-name">Search Item...</div>
+      <div class="menu-item-desc">
+        Search Arena for an item by keyword, item number, or description. Select an item from results
+        to automatically populate all tokens in your document with that item's data.
+      </div>
+    </div>
+
+    <div class="menu-item">
+      <div class="menu-item-name">Quick Search (by number)</div>
+      <div class="menu-item-desc">
+        Faster search if you know the exact Arena item number. Enter the number and your document
+        is instantly populated. Great for repeated use with known items.
+      </div>
+    </div>
+
+    <div class="menu-item">
+      <div class="menu-item-name">Clear All Tokens</div>
+      <div class="menu-item-desc">
+        Removes all Arena tokens from your document. Use this to start fresh or when switching to
+        a different category structure. Cannot be undone, so use carefully!
+      </div>
+    </div>
+  </div>
+
+  <!-- Document Generation Section -->
+  <div class="menu-section">
+    <div class="menu-title">
+      <span class="menu-icon">✨</span>
+      <span>Document Generation (AI-Powered)</span>
+    </div>
+
+    <div class="menu-item">
+      <div class="menu-item-name">Generate with AI...</div>
+      <div class="menu-item-desc">
+        Use Google Gemini AI to generate a complete professional document with Arena tokens automatically
+        placed. Choose category, document type (SOP, Policy, etc.), and describe what you want. AI creates
+        the entire document structure with tokens ready for population.
+      </div>
+    </div>
+
+    <div class="menu-item">
+      <div class="menu-item-name">Autodetect Field Tokens...</div>
+      <div class="menu-item-desc">
+        Scan your existing document for text that matches Arena field names. The system suggests where
+        to insert tokens based on context (like "Owner:" matching the owner field). Review and approve
+        suggestions before insertion.
+      </div>
+    </div>
+
+    <div class="quick-tip">
+      <strong>💡 Tip:</strong> AI features require a free Gemini API key. Configure yours in Settings > Configure Gemini API Key.
+    </div>
+  </div>
+
+  <!-- Revisions Section -->
+  <div class="menu-section">
+    <div class="menu-title">
+      <span class="menu-icon">📝</span>
+      <span>Revisions</span>
+    </div>
+
+    <div class="menu-item">
+      <div class="menu-item-name">Update in Place</div>
+      <div class="menu-item-desc">
+        Refresh all Arena data in the current document. Useful when Arena data has changed and you
+        want to update your document without creating a new copy.
+      </div>
+    </div>
+
+    <div class="menu-item">
+      <div class="menu-item-name">Create Revised Copy</div>
+      <div class="menu-item-desc">
+        Creates a new copy of your document with updated Arena data. Preserves the original document
+        while creating a revision with the latest PLM information.
+      </div>
+    </div>
+
+    <div class="menu-item">
+      <div class="menu-item-name">Show Change Preview</div>
+      <div class="menu-item-desc">
+        Preview what will change before updating. Shows old vs. new values for all tokens so you can
+        review changes before committing to an update.
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Section -->
+  <div class="menu-section">
+    <div class="menu-title">
+      <span class="menu-icon">⚙️</span>
+      <span>Settings</span>
+    </div>
+
+    <div class="menu-item">
+      <div class="menu-item-name">Manage Token Mappings</div>
+      <div class="menu-item-desc">
+        View and manage all category/field mappings in your document. See which tokens are available
+        and remove categories you no longer need.
+      </div>
+    </div>
+
+    <div class="menu-item">
+      <div class="menu-item-name">Configure Gemini API Key...</div>
+      <div class="menu-item-desc">
+        Set up your free Google Gemini API key to enable AI-powered document generation and autodetect
+        features. Get your key from Google AI Studio (link provided in dialog).
+      </div>
+    </div>
+
+    <div class="menu-item">
+      <div class="menu-item-name">Clear Cache</div>
+      <div class="menu-item-desc">
+        Clears all cached Arena data (categories, fields) and Gemini rate limit history. Use this
+        if you're seeing stale data or experiencing rate limit issues.
+      </div>
+    </div>
+
+    <div class="menu-item">
+      <div class="menu-item-name">About</div>
+      <div class="menu-item-desc">
+        Information about this add-on, version number, creator details, and link to connect on LinkedIn.
+      </div>
+    </div>
+  </div>
+
+  <div class="workflow-box">
+    <div class="workflow-title">🚀 Quick Start Example</div>
+    <ul class="workflow-steps">
+      <li>Click "Login" and enter your Arena credentials</li>
+      <li>Click "Document Generation > Generate with AI..."</li>
+      <li>Select category "Quality" and fields "Owner", "Title", "Description"</li>
+      <li>Choose document type "SOP" and describe your needs</li>
+      <li>Review the AI-generated document with tokens</li>
+      <li>Click "Populate from Arena > Search Item..."</li>
+      <li>Search for your quality item and select it</li>
+      <li>Your document is now filled with live Arena data!</li>
+    </ul>
+  </div>
+
+  <div class="quick-tip">
+    <strong>💡 Pro Tip:</strong> Use the search filters and "Remember credentials" feature to save time.
+    The add-on caches categories and fields for faster performance on subsequent uses.
+  </div>
+
+  <button onclick="google.script.host.close()">Close</button>
+</body>
+</html>

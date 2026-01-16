@@ -7,21 +7,41 @@
       font-family: 'Google Sans', Arial, sans-serif;
       padding: 20px;
       margin: 0;
+      max-width: 500px;
     }
 
     .header {
       text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 25px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #1976D2;
     }
 
     h2 {
       color: #1976D2;
       margin-bottom: 5px;
+      font-size: 24px;
     }
 
     .version {
       color: #666;
-      font-size: 14px;
+      font-size: 13px;
+      font-style: italic;
+    }
+
+    .creator-section {
+      background-color: #e3f2fd;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border-left: 4px solid #1976D2;
+    }
+
+    .creator-name {
+      font-weight: 600;
+      font-size: 16px;
+      color: #1976D2;
+      margin-bottom: 8px;
     }
 
     .section {
@@ -32,6 +52,7 @@
       font-weight: 600;
       color: #333;
       margin-bottom: 10px;
+      font-size: 15px;
     }
 
     .section-content {
@@ -40,65 +61,158 @@
       font-size: 14px;
     }
 
+    .disclaimer {
+      background-color: #fff3cd;
+      padding: 12px;
+      border-radius: 4px;
+      border-left: 4px solid #ffc107;
+      font-size: 13px;
+      color: #856404;
+      margin-bottom: 20px;
+    }
+
     a {
       color: #1976D2;
       text-decoration: none;
+      font-weight: 500;
     }
 
     a:hover {
       text-decoration: underline;
     }
 
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 25px;
+    }
+
     button {
-      width: 100%;
+      flex: 1;
       background-color: #1976D2;
       color: white;
       border: none;
-      padding: 10px;
+      padding: 12px;
       border-radius: 4px;
       cursor: pointer;
       font-size: 14px;
       font-weight: 500;
-      margin-top: 20px;
+      transition: background-color 0.2s;
     }
 
     button:hover {
       background-color: #1565C0;
+    }
+
+    .btn-linkedin {
+      background-color: #0077B5;
+    }
+
+    .btn-linkedin:hover {
+      background-color: #005885;
+    }
+
+    .btn-secondary {
+      background-color: #fff;
+      color: #666;
+      border: 1px solid #ddd;
+    }
+
+    .btn-secondary:hover {
+      background-color: #f5f5f5;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      font-size: 13px;
+    }
+
+    .feature-icon {
+      color: #1976D2;
+      font-weight: bold;
+      flex-shrink: 0;
     }
   </style>
 </head>
 <body>
   <div class="header">
     <h2>Arena PLM for Google Docs</h2>
-    <div class="version">Version 0.1.0-alpha</div>
+    <div class="version">Version 2.2.0</div>
+  </div>
+
+  <div class="creator-section">
+    <div class="creator-name">Created by Daniel Bacon</div>
+    <div class="section-content">
+      This add-on was created to streamline document generation and PLM data integration for Arena users.
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    <strong>⚠️ Important:</strong> This add-on is provided free of charge with no official support.
+    Use at your own discretion. For questions or to connect, reach out on LinkedIn.
   </div>
 
   <div class="section">
-    <div class="section-title">About</div>
+    <div class="section-title">What This Add-On Does</div>
     <div class="section-content">
-      A Google Docs add-on that enables powerful merge-field capabilities with PTC Arena PLM data.
-      Create document templates with Arena field tokens, search for items, and automatically populate
-      documents with live PLM data.
+      Seamlessly integrate PTC Arena PLM data into your Google Docs. Create document templates
+      with Arena field tokens, generate documents with AI, and automatically populate them with
+      live PLM data.
     </div>
   </div>
 
   <div class="section">
-    <div class="section-title">Features</div>
-    <div class="section-content">
-      • Category-based field mapping<br>
-      • Drag-and-drop token insertion<br>
-      • Arena search integration<br>
-      • Smart document population<br>
-      • Document revisioning support
+    <div class="section-title">Key Features</div>
+    <div class="features-grid">
+      <div class="feature-item">
+        <span class="feature-icon">✓</span>
+        <span>AI Document Generation</span>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">✓</span>
+        <span>Token Autodetect</span>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">✓</span>
+        <span>Token Palette</span>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">✓</span>
+        <span>Arena Search</span>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">✓</span>
+        <span>Smart Caching</span>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">✓</span>
+        <span>Rate Limiting</span>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">✓</span>
+        <span>Document Revisioning</span>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">✓</span>
+        <span>Real-time Filtering</span>
+      </div>
     </div>
   </div>
 
   <div class="section">
-    <div class="section-title">Support</div>
+    <div class="section-title">Open Source</div>
     <div class="section-content">
-      For issues or questions, visit:<br>
-      <a href="https://github.com/wallcrawler78/PTC-Arena-Docs" target="_blank">
-        github.com/wallcrawler78/PTC-Arena-Docs
+      GitHub: <a href="https://github.com/wallcrawler78/PTC-Arena-Docs" target="_blank">
+        wallcrawler78/PTC-Arena-Docs
       </a>
     </div>
   </div>
@@ -106,10 +220,15 @@
   <div class="section">
     <div class="section-title">License</div>
     <div class="section-content">
-      MIT License © 2026
+      MIT License © 2026 Daniel Bacon
     </div>
   </div>
 
-  <button onclick="google.script.host.close()">Close</button>
+  <div class="button-group">
+    <button class="btn-secondary" onclick="google.script.host.close()">Close</button>
+    <button class="btn-linkedin" onclick="window.open('https://www.linkedin.com/in/danielbacon', '_blank')">
+      Connect on LinkedIn
+    </button>
+  </div>
 </body>
 </html>
