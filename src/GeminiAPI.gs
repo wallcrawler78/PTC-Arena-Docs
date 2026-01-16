@@ -2,11 +2,19 @@
  * Gemini API Client
  * Handles all communication with Google Gemini API for document generation
  * Follows the ArenaAPIClient pattern for consistency
+ * Implements intelligent rate limiting to stay within free tier limits
  */
 
 var GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
 var GEMINI_MODEL = 'gemini-2.0-flash'; // Current stable model for v1beta API (2026)
 var CACHE_TTL_GEMINI = 0; // No caching for generated content
+
+// Rate limiting configuration
+var GEMINI_RATE_LIMITS = {
+  requestsPerMinute: 15,
+  requestsPerDay: 1500,
+  windowMs: 60000 // 1 minute in milliseconds
+};
 
 /**
  * Gemini API Client Class
@@ -34,13 +42,117 @@ var GeminiAPIClient = (function() {
   };
 
   /**
+   * Gets request history from last minute
+   * @private
+   * @return {Array} Array of timestamps
+   */
+  GeminiAPIClient.prototype._getRequestHistory = function() {
+    var userProps = PropertiesService.getUserProperties();
+    var historyJson = userProps.getProperty('gemini_request_history');
+
+    if (!historyJson) {
+      return [];
+    }
+
+    try {
+      var history = JSON.parse(historyJson);
+      var now = Date.now();
+
+      // Filter out requests older than 1 minute
+      var recentRequests = history.filter(function(timestamp) {
+        return (now - timestamp) < GEMINI_RATE_LIMITS.windowMs;
+      });
+
+      return recentRequests;
+    } catch (e) {
+      Logger.log('Error parsing request history: ' + e.message);
+      return [];
+    }
+  };
+
+  /**
+   * Records a new API request
+   * @private
+   */
+  GeminiAPIClient.prototype._recordRequest = function() {
+    var history = this._getRequestHistory();
+    history.push(Date.now());
+
+    var userProps = PropertiesService.getUserProperties();
+    userProps.setProperty('gemini_request_history', JSON.stringify(history));
+  };
+
+  /**
+   * Checks if we can make a request within rate limits
+   * @private
+   * @return {Object} {canProceed: boolean, waitMs: number, requestsInWindow: number}
+   */
+  GeminiAPIClient.prototype._checkRateLimit = function() {
+    var history = this._getRequestHistory();
+    var requestsInWindow = history.length;
+
+    if (requestsInWindow < GEMINI_RATE_LIMITS.requestsPerMinute) {
+      return {
+        canProceed: true,
+        waitMs: 0,
+        requestsInWindow: requestsInWindow
+      };
+    }
+
+    // Calculate how long to wait until oldest request expires
+    var oldestRequest = Math.min.apply(Math, history);
+    var waitMs = GEMINI_RATE_LIMITS.windowMs - (Date.now() - oldestRequest);
+
+    return {
+      canProceed: false,
+      waitMs: Math.max(waitMs, 1000), // At least 1 second
+      requestsInWindow: requestsInWindow
+    };
+  };
+
+  /**
+   * Waits if necessary to respect rate limits
+   * @private
+   * @return {Object} Status of rate limit check
+   */
+  GeminiAPIClient.prototype._waitForRateLimit = function() {
+    var check = this._checkRateLimit();
+
+    if (check.canProceed) {
+      Logger.log('Rate limit OK: ' + check.requestsInWindow + '/' + GEMINI_RATE_LIMITS.requestsPerMinute + ' requests in window');
+      return check;
+    }
+
+    var waitSeconds = Math.ceil(check.waitMs / 1000);
+    Logger.log('Rate limit reached (' + check.requestsInWindow + '/' + GEMINI_RATE_LIMITS.requestsPerMinute + '). Waiting ' + waitSeconds + ' seconds...');
+
+    // Wait for rate limit to clear
+    Utilities.sleep(check.waitMs);
+
+    Logger.log('Rate limit wait complete. Proceeding with request.');
+    return {
+      canProceed: true,
+      waitMs: 0,
+      requestsInWindow: check.requestsInWindow,
+      didWait: true,
+      waitedSeconds: waitSeconds
+    };
+  };
+
+  /**
    * Makes an authenticated request to Gemini API
    * @private
    * @param {string} endpoint - API endpoint
    * @param {Object} payload - Request payload
+   * @param {boolean} skipRateLimitCheck - Skip rate limit check (used during retries)
    * @return {Object} Parsed JSON response
    */
-  GeminiAPIClient.prototype._makeRequest = function(endpoint, payload) {
+  GeminiAPIClient.prototype._makeRequest = function(endpoint, payload, skipRateLimitCheck) {
+    // Check rate limit before making request (unless skipped for retry)
+    if (!skipRateLimitCheck) {
+      this._waitForRateLimit();
+    }
+
     var apiKey = this._getApiKey();
     var url = GEMINI_BASE_URL + endpoint + '?key=' + apiKey;
 
@@ -58,7 +170,9 @@ var GeminiAPIClient = (function() {
       var responseCode = response.getResponseCode();
 
       if (responseCode === 429) {
-        throw new Error('Gemini API rate limit exceeded. Please try again in a few moments.');
+        var error = new Error('Gemini API rate limit exceeded. Waiting before retry...');
+        error.isRateLimitError = true;
+        throw error;
       }
 
       if (responseCode === 403 || responseCode === 400) {
@@ -75,6 +189,9 @@ var GeminiAPIClient = (function() {
         throw new Error('Gemini API Error: ' + this._parseErrorMessage(errorText));
       }
 
+      // Record successful request for rate limiting
+      this._recordRequest();
+
       return JSON.parse(response.getContentText());
     } catch (error) {
       Logger.log('Gemini API request failed: ' + error.message);
@@ -83,30 +200,64 @@ var GeminiAPIClient = (function() {
   };
 
   /**
-   * Makes request with retry logic
+   * Makes request with intelligent retry logic
    * @private
+   * @param {string} endpoint - API endpoint
+   * @param {Object} payload - Request payload
+   * @param {number} maxRetries - Maximum number of retries (default 5)
+   * @return {Object} API response
    */
   GeminiAPIClient.prototype._makeRequestWithRetry = function(endpoint, payload, maxRetries) {
-    maxRetries = maxRetries || 3;
+    maxRetries = maxRetries || 5;
+    var rateLimitRetries = 0;
+    var maxRateLimitRetries = 3;
 
     for (var i = 0; i < maxRetries; i++) {
       try {
-        return this._makeRequest(endpoint, payload);
+        // Skip rate limit check on retries (we already waited)
+        var skipCheck = (i > 0);
+        return this._makeRequest(endpoint, payload, skipCheck);
       } catch (error) {
-        if (i === maxRetries - 1) throw error;
-
         // Don't retry on auth or permission errors
-        if (error.message.indexOf('access denied') !== -1 ||
-            error.message.indexOf('Authentication failed') !== -1) {
+        if (error.message.indexOf('Invalid Gemini API key') !== -1 ||
+            error.message.indexOf('Authentication failed') !== -1 ||
+            error.message.indexOf('API key not configured') !== -1) {
           throw error;
         }
 
-        // Exponential backoff: 1s, 2s, 4s
-        var delay = Math.pow(2, i) * 1000;
-        Logger.log('Retry ' + (i + 1) + ' after ' + delay + 'ms');
+        // Handle rate limit errors specially
+        if (error.isRateLimitError) {
+          rateLimitRetries++;
+
+          if (rateLimitRetries > maxRateLimitRetries) {
+            throw new Error('Rate limit exceeded multiple times. Please wait a few minutes before trying again.');
+          }
+
+          // Longer wait for rate limit errors: 5s, 15s, 30s
+          var rateLimitDelay = Math.min(5000 * Math.pow(3, rateLimitRetries - 1), 60000);
+          var waitSeconds = Math.ceil(rateLimitDelay / 1000);
+
+          Logger.log('Rate limit error - waiting ' + waitSeconds + ' seconds before retry ' + rateLimitRetries + '/' + maxRateLimitRetries);
+          Utilities.sleep(rateLimitDelay);
+
+          // Don't count rate limit retries against normal retry limit
+          i--;
+          continue;
+        }
+
+        // Last retry - throw error
+        if (i === maxRetries - 1) {
+          throw error;
+        }
+
+        // Exponential backoff for other errors: 2s, 4s, 8s, 16s
+        var delay = Math.pow(2, i + 1) * 1000;
+        Logger.log('Retry ' + (i + 1) + '/' + maxRetries + ' after ' + (delay/1000) + 's - Error: ' + error.message);
         Utilities.sleep(delay);
       }
     }
+
+    throw new Error('Max retries exceeded');
   };
 
   /**
