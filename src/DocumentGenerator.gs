@@ -31,24 +31,16 @@ function generateDocumentWithGemini(wizardData) {
       };
     }
 
-    // 2. Validate Gemini API access
+    // 2. Create Gemini client
+    // Note: API key validation happens on first actual request (no need for separate validateAccess() call)
     var geminiClient = createGeminiClient();
-    var accessCheck = geminiClient.validateAccess();
-
-    if (!accessCheck.success) {
-      return {
-        success: false,
-        error: 'Gemini API access failed: ' + accessCheck.error,
-        message: 'Unable to access Gemini API. Please ensure the Generative Language API is enabled in your Google Cloud Console.'
-      };
-    }
 
     // 3. Build prompt
     var prompt = buildDocumentPrompt(wizardData);
 
     Logger.log('Generating document with prompt length: ' + prompt.length);
 
-    // 4. Generate content with Gemini
+    // 4. Generate content with Gemini (this is the ONLY Gemini API call per generation)
     var generationOptions = {
       temperature: wizardData.parameters.temperature || 0.7,
       maxTokens: _calculateMaxTokens(wizardData.parameters.length),

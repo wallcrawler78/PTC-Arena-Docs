@@ -333,6 +333,19 @@ If Google changes their limits, update here and redeploy.
 
 ## Changelog
 
+### v2.2.1 (2026-01-15) - CRITICAL BUG FIX
+- **FIXED**: Removed unnecessary `validateAccess()` call that was doubling all Gemini API usage
+  - Previously: Every document generation made 2 API calls (validation + actual generation)
+  - Now: Only 1 API call per document generation (50% reduction in API usage)
+  - This was causing users to hit rate limits twice as fast as expected
+- **IMPROVED**: Added full Gemini error response logging for 429 errors
+  - Now logs complete error details to help diagnose which quota was exceeded
+  - Helps distinguish between per-minute (15 RPM), per-day (1,500 RPD), and monthly token limits
+- **DOCUMENTED**: Created comprehensive analysis in `GEMINI_API_ANALYSIS.md`
+  - Identified that persistent rate limits were likely from hitting 1,500/day quota (not 15/minute)
+  - Explained why "0/15 requests in window" still resulted in 429 errors
+  - Recommended adding daily quota tracking in future iteration
+
 ### v2.2.0 (2026-01-15)
 - Implemented intelligent rate limiting with sliding window
 - Added automatic waiting when approaching limits

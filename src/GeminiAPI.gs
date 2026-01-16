@@ -170,8 +170,13 @@ var GeminiAPIClient = (function() {
       var responseCode = response.getResponseCode();
 
       if (responseCode === 429) {
+        // Log full Gemini error response for diagnostics
+        var errorText = response.getContentText();
+        Logger.log('Gemini API 429 Rate Limit Error - Full response: ' + errorText);
+
         var error = new Error('Gemini API rate limit exceeded. Waiting before retry...');
         error.isRateLimitError = true;
+        error.geminiResponse = errorText; // Store for potential future use
         throw error;
       }
 
